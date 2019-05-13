@@ -447,6 +447,23 @@ classdef StockAll3<handle
             xlswrite('..\Data\find.xlsx',[['Code',title];Val]);
         end % find
         
+         function Val=Verify(obj)
+             connection=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgresql://localhost:5432/testDB');
+            curs = exec(connection, 'select * from findall where rdown20>0;');
+            row = fetch(curs);
+            fdata=row.Data;
+            codelist=fdata(:,1);
+            datelist=fdata(:,2);
+            %for i=1:length(codelist)
+            for i=1:5
+                code=codelist{i};
+                date=datelist{i};
+                kdataAll=eval(['obj.KDataAll.k',code,';']);
+                sid=find(kdataAll(:,1)==datenum(date,'yyyy-mm-dd'))+1;
+                eid=min(size(kdataAll,1),sid+9);
+                kdataAll(sid:eid,:)
+            end
+        end
     end %  methods
     
     methods (Access='private')
