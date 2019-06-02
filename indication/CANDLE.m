@@ -42,8 +42,6 @@ classdef CANDLE<indicationBase
                     %---------------------------
                     %用普通candle绘制，可以避免时间序列绘制产生的空挡，不过句柄要靠额外取得
                     %设置颜色和显示区域
-                    obj.Data(:,2:end-1)
-                    %candle(obj.Data(:,2),obj.Data(:,3),obj.Data(:,4),obj.Data(:,5));
                     candle(obj.Data(:,5),obj.Data(:,2),obj.Data(:,3),obj.Data(:,4));
                     hcdl_vl = findobj(gca, 'Type', 'line');
                     hcdl_bx = findobj(gca, 'Type', 'patch');

@@ -88,7 +88,7 @@ classdef MainFigure < handle
         function delete(obj)
             delete(obj.axesObj)
             delete(obj.hResultTable)
-            delete(obj.hCodeList)
+            delete(obj.hCodeList.hfig)
             delete(obj.indObjArr)
             delete(obj.customizeObjArr)
         end
