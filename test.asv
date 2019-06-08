@@ -134,23 +134,23 @@ base=[];
 if t.top(1)==1
     baseH=c(1);
     baseL=k.low(1);
-    rL(1)=(c(1)-baseL)/baseL;
+    rL(1)=(c(1)-baseH)/baseH;
     hh(1,1)=c(1);
     hh(1,2)=baseL;
     ll(1,1)=c(2);
     ll(1,2)=baseH;
-    base(1)=baseL;
-    base(2)=baseH;
+    base(1)=baseH;
+    base(2)=baseL;
 else
     baseH=k.high(1);
     baseL=c(1);   
-    rL(1)=(c(1)-baseH)/baseH;
+    rL(1)=(c(1)-baseL)/baseL;
     ll(1,1)=c(1);
     ll(1,2)=baseH;
     hh(1,1)=c(2);
     hh(1,2)=baseL;
-    base(1)=baseH;
-    base(2)=baseL;
+    base(1)=baseL;
+    base(2)=baseH;
 end
 rL(2)=(c(2)-c(1))/c(1);
 
@@ -162,25 +162,25 @@ for i=3:length(c)
                 baseL=hh(j,2);
                 hh(j,:)=[];
             else
+                hh(end+1,:)=[c(i),baseL];
+                rL(i)=(c(i)-baseL)/baseL;
+                base(i)=baseL;
                 break;
             end
         end
-        hh(end+1,:)=[c(i),baseL];
-        rL(i)=(c(i)-baseL)/baseL;
-        base(i)=baseL;
     else
         baseH=c(i-1);
         for j=size(ll,1):-1:1
-            if c(i)<=ll(j,1) && ~isempty(ll)
+            if c(i)<=ll(j,1)
                 baseH=ll(j,2);
                 ll(j,:)=[];
             else
+                ll(end+1,:)=[c(i),baseH];
+                rL(i)=(c(i)-baseH)/baseH;
+                base(i)=baseH;
                 break
             end
         end
-        ll(end+1,:)=[c(i),baseH];
-        rL(i)=(c(i)-baseH)/baseH;
-        base(i)=baseH;
     end
 end
 t.c=c;
