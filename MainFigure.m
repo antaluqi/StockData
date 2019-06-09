@@ -29,6 +29,7 @@ classdef MainFigure < handle
             %--------------------------
             obj.Initialization     % 界面初始化
             obj.loadData;          % 加载数据（临时）
+            obj.Data
             %-------------------------加载回调程序
             obj.CrossLineSwitch=0;
             set(obj.hfig,'WindowButtonMotionFcn',{@obj.WindowButtonMotionFcn}) % 窗口鼠标移动回调

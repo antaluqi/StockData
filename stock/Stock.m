@@ -378,6 +378,7 @@ classdef Stock<handle
              name={'Date','Open','High','Close','Low','Volume'};
              Val=cell2table([cellstr(datestr(Val(:,1),'yyyy-mm-dd')),num2cell(Val(:,2:end))],'VariableNames',name);
              Val.Date=datetime(Val.Date);
+             Val=table2timetable(Val,'RowTimes','Date');
          end %ifeng数据
          %---------------------------------------------------------------------------------------------------------------------------------------
          function Val=Indicators(obj, type ,ParameterList,DateRange,varargin) %计算各种指标

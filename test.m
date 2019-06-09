@@ -117,79 +117,23 @@ hold off
 close(conn)
 
 %% ==============================================================================
-% 顶点最大尺度的探测
+% 顶点查看
 addpath([cd,'\stock']);
 clear
 clc
 conn=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgresql://localhost:5432/testDB');
-dbds=databaseDatastore(conn,'select * from findtop(''sh600118'')');
+dbds=databaseDatastore(conn,'select * from findtop(''sh600118'') where abs(rleft)>8 and abs(rright)>8');
 k=dbds.readall;
-t=k(k.top~=0,:);
-c=max([t.high,-t.low].*t.top,[],2);
+t=datetime(datenum(k.date),'ConvertFrom','datenum');
+c=max([k.high,-k.low].*k.top,[],2);
+S=Stock('sh600118');
+k=S.HistoryDaily('2016-01-01','2019-05-24');
+candle(k)
+hold on 
+plot(t,c,'ro')
+hold off
 
-rL=[];
-hh=[];
-ll=[];
-base=[];
-if t.top(1)==1
-    baseH=c(1);
-    baseL=k.low(1);
-    rL(1)=(c(1)-baseL)/baseL;
-    hh(1,1)=c(1);
-    hh(1,2)=baseL;
-    ll(1,1)=c(2);
-    ll(1,2)=baseH;
-    base(1)=baseL;
-    base(2)=baseH;
-else
-    baseH=k.high(1);
-    baseL=c(1);   
-    rL(1)=(c(1)-baseH)/baseH;
-    ll(1,1)=c(1);
-    ll(1,2)=baseH;
-    hh(1,1)=c(2);
-    hh(1,2)=baseL;
-    base(1)=baseH;
-    base(2)=baseL;
-end
-rL(2)=(c(2)-c(1))/c(1);
-
-for i=3:length(c)
-    if t.top(i)==1
-        baseL=c(i-1);
-        for j=size(hh,1):-1:1
-            if c(i)>=hh(j,1)
-                baseL=hh(j,2);
-                hh(j,:)=[];
-            else
-                break;
-            end
-        end
-        hh(end+1,:)=[c(i),baseL];
-        rL(i)=(c(i)-baseL)/baseL;
-        base(i)=baseL;
-    else
-        baseH=c(i-1);
-        for j=size(ll,1):-1:1
-            if c(i)<=ll(j,1) && ~isempty(ll)
-                baseH=ll(j,2);
-                ll(j,:)=[];
-            else
-                break
-            end
-        end
-        ll(end+1,:)=[c(i),baseH];
-        rL(i)=(c(i)-baseH)/baseH;
-        base(i)=baseH;
-    end
-end
-t.c=c;
-t.rL=rL'*100;
-t.base=base';
-t
-close(conn);
-
-
+close(conn)
 
 
 

@@ -67,7 +67,7 @@ classdef indicationBase<handle & matlab.mixin.Heterogeneous
                 pStr=strjoin(arrayfun(@(x) num2str(x),obj.propertie,'UniformOutput',0),'_'); % 参数字符化，如[15,2]变为'15_2'
                 if strcmp(obj.type,'CANDLE') % 如果指标是Candle，则取得相应字段数据
                     % obj.Data=extfield(reLoadData,{'Open','High','Close','Low','Volume'});
-                    
+
                      d=[reLoadData.High,reLoadData.Low,reLoadData.Close,reLoadData.Open,reLoadData.Volume]; %---------------------------------------
                      obj.Data=[d.dates,fts2mat(d)];%---------------------------------------
                 else                         % 如果指标是非Candle，则取得相应字段数据

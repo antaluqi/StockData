@@ -9,7 +9,7 @@ classdef Comm<handle
     end
     methods (Static)
         function ftsData=table2fts(tableData)
-            if ~isa(tableData,'table')
+            if ~isa(tableData,'table') && ~isa(tableData,'timetable') 
                 error('需要转换的数据应为table')
             end
             names=tableData.Properties.VariableNames;
