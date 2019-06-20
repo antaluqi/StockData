@@ -1056,8 +1056,8 @@ classdef Stock<handle
             end
             S(:,[4:8,10])=num2cell(str2double(S(:,[4:8,10])));
             S(:,3)=strcat(strrep(strrep(S(:,1),'51','sz'),'1','sh'),S(:,3));
-            Explain={'市场代码','名字','代码','当前价格','涨跌','涨跌%','成交量(手)','成交量(万)','状态','总市值'};
-            Name={'Market','Name','Code','RealPrice','Rise','Yield','Volume','Amount','State','TotalMarketValue'};
+            Explain={'市场代码','名字','代码','当前价格','涨跌','涨跌%','成交量(手)','成交量(万)','状态','总市值','unknow'};
+            Name={'Market','Name','Code','RealPrice','Rise','Yield','Volume','Amount','State','TotalMarketValue','unknow'};
             info=cell2table(S,'VariableNames',Name');  
         end % QuickInfo
         function info=HistoryK(CodeList,BeginDate,EndDate) % 多股票K线数据输出

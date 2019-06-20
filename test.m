@@ -122,18 +122,49 @@ addpath([cd,'\stock']);
 clear
 clc
 conn=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgresql://localhost:5432/testDB');
-dbds=databaseDatastore(conn,'select * from findtop(''sh600118'') where abs(rleft)>8 and abs(rright)>8');
+dbds=databaseDatastore(conn,'select * from findtop0(''sz002415'') where top<>0');
 k=dbds.readall;
 t=datetime(datenum(k.date),'ConvertFrom','datenum');
 c=max([k.high,-k.low].*k.top,[],2);
-S=Stock('sh600118');
-k=S.HistoryDaily('2016-01-01','2019-05-24');
-candle(k)
+S=Stock('sz002415');
+kdata=S.HistoryDaily('2016-01-01','2019-06-13');
+candle(kdata)
 hold on 
 plot(t,c,'ro')
 hold off
 
 close(conn)
+
+
+%% ==============================================================================
+% 另一种顶点找寻的思路
+addpath([cd,'\stock']);
+clear
+clc
+S=Stock('sz002415');
+kdata=S.HistoryDaily('2016-01-01','2019-06-13');
+m=(kdata.High+kdata.Low)/2;
+top=[m,m>[nan;m(1:end-1)]&m>[m(2:end);nan],-1*(m<[nan;m(1:end-1)]&m<[m(2:end);nan])];
+t=top(:,2).*kdata.High+top(:,3).*kdata.Low*(-1);
+
+candle(kdata);
+hold on 
+plot(kdata.Date(t>0),t(t>0),'ro')
+hold off
+
+%% ==============================================================================
+addpath([cd,'\stock']);
+clear
+clc
+S=Stock('sz002415');
+kdata=S.HistoryDaily('2016-01-01','2019-06-13');
+top0i=(kdata.High>[nan;kdata.High(1:end-1)] & kdata.High>[kdata.High(2:end);nan])-(kdata.Low<[nan;kdata.Low(1:end-1)] & kdata.Low<[kdata.Low(2:end);nan]);
+m=(kdata.High+kdata.Low)/2;
+top=[m,m>[nan;m(1:end-1)]&m>[m(2:end);nan],-1*(m<[nan;m(1:end-1)]&m<[m(2:end);nan])];
+
+
+
+
 
 
 
