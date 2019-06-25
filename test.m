@@ -122,10 +122,10 @@ addpath([cd,'\stock']);
 clear
 clc
 conn=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgresql://localhost:5432/testDB');
-dbds=databaseDatastore(conn,'select * from findtop0(''sz002415'') where top<>0');
+dbds=databaseDatastore(conn,'select * from findtop(''sz002415'') where abs(rl)>7 and abs(rr)>7');
 k=dbds.readall;
 t=datetime(datenum(k.date),'ConvertFrom','datenum');
-c=max([k.high,-k.low].*k.top,[],2);
+c=k.val;
 S=Stock('sz002415');
 kdata=S.HistoryDaily('2016-01-01','2019-06-13');
 candle(kdata)
@@ -162,11 +162,47 @@ top0i=(kdata.High>[nan;kdata.High(1:end-1)] & kdata.High>[kdata.High(2:end);nan]
 m=(kdata.High+kdata.Low)/2;
 top=[m,m>[nan;m(1:end-1)]&m>[m(2:end);nan],-1*(m<[nan;m(1:end-1)]&m<[m(2:end);nan])];
 
+%% =================================================================================
+% socket 测试
+clc
+clear
+t = tcpip('119.147.212.81', 7709,'NetworkRole','Client');%连接这个ip和这个端口的TCP服务器，60秒超时，缓冲大小10240
+set(t,'InputBufferSize',4500);
+set(t,'Timeout',10);
+fopen(t);
+disp('zzzzzzzzzzzzzzz')
+fwrite(t,'0c01086401011c001c002d0500003030303030310900010000000a0000000000000000000000');
+while(1) %轮询，直到有数据了再fread
+    nBytes = get(t,'BytesAvailable');
+    if nBytes>0
+        break;
+    end
+end
+receive = fread(t, 1024);
+fclose(t);
 
 
 
-
-
+%% =================================================================================
+% socket 跨平台传输
+clc
+clear
+t = tcpip('localhost', 50007,'NetworkRole','Client');
+set(t,'InputBufferSize',4500);
+set(t,'Timeout',10);
+fopen(t);
+receive = fread(t,[1, t.BytesAvailable])
+while(1)
+    receive = fread(t,[1, t.BytesAvailable]);  
+    data=char(receive)'
+    cmdstr=input('cmd=:');
+    if cmdstr=='q'
+        fwrite(t,double(cmdstr));
+        break
+    end 
+    fwrite(t,double(cmdstr));
+end
+fclose(t);
 
 
 
