@@ -19,8 +19,9 @@ classdef CANDLE<indicationBase
         end
         function calculation(obj)                 %（重载）计算数据（一般首次运行用到，Candle有别于通用calculation函数）
             if ~isempty(obj.parent) && ~isempty(obj.parent.DataSource)
+                
                 S=obj.parent.DataSource;
-                h=S.HistoryDaily(today-obj.propertie(1),today,'L');
+                h=S.HistoryDaily(today-obj.propertie(1),today);
                 obj.Data=[datenum(h.Date),h.High,h.Low,h.Close,h.Open,h.Volume];
             end
         end        
@@ -47,8 +48,8 @@ classdef CANDLE<indicationBase
                     hcdl_bx = findobj(gca, 'Type', 'patch');
                     obj.hthis=[hcdl_vl(:); hcdl_bx(:)];
                     ch = get(gca,'children');
-                    set(ch(1),'FaceColor','g');
-                    set(ch(2),'FaceColor','r');
+%                     set(ch(1),'FaceColor','g');
+%                     set(ch(2),'FaceColor','r');
                     showTime=[size(obj.Data,1)-obj.propertie(2),size(obj.Data,1)];
                     haxesTemp.XLim=[showTime(1)-0.5,showTime(2)+0.5];
                     
@@ -82,8 +83,7 @@ classdef CANDLE<indicationBase
 
     end
     methods (Static)
-        function propSet(parent)
-            eval([mfilename,'(parent)']);
+        function propSet(parent,indObj)
             disp(['运行',mfilename,'参数设定'])
         end
     end

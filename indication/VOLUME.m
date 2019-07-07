@@ -32,6 +32,7 @@ classdef VOLUME<indicationBase
                     iDown=~iUp;
                     VolumeData=candleObj.Data(:,[1,6]);
                 else
+                    S=obj.parent.DataSource;
                     tableData=S.HistoryDaily(today-720,today); % ¼ÆËã
                     iUp=tableData.Open<=tableData.Close;
                     iDown=~iUp;                   

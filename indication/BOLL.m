@@ -13,8 +13,8 @@ classdef BOLL<indicationBase
             obj=obj@indicationBase(hMainFigure);
             obj.type='BOLL';
             obj.axesName='CandleAxes';
-            obj.propNo=2;     % 指标个数1个
-            obj.DataNo=3;     % 数据列数1列
+            obj.propNo=2;     % 指标个数2个
+            obj.DataNo=3;     % 数据列数3列
             obj.pField={'BOllMid','BOllUp','BOllDown'};% 数据列表头名前缀
             obj.propertie=propertie; % 输入参数
         end

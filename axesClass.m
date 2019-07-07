@@ -185,8 +185,8 @@ classdef axesClass<handle
               case 'open'
                   pixelPos=get(obj.parent.hfig,'currentpoint');
                   coordPos=obj.parent.pixel2coord(pixelPos);
-                  d=obj.parent.Data(round(coordPos(1)));
-                  pointDate=datestr(d.dates,'yyyy-mm-dd');
+                  d=obj.parent.indObjArr(1).Data(round(coordPos(1)));
+                  pointDate=datestr(d(:,1),'yyyy-mm-dd');
                   tick=obj.parent.DataSource.HistoryTick(pointDate);
                   tickFigure=figure ;
                   tickAxes=axes('Tag','tickAxes','parent',tickFigure,'nextplot','add','xtick',[],'FontSize',7);

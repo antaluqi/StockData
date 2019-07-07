@@ -60,6 +60,7 @@ classdef Stock<handle
     methods
         %---------------------------------------------------------------------------------------------------------------------------------------
          function obj=Stock(Code,varargin)  % 构造函数 
+             addpath([cd,'\pytdx']);
              % e.g.  S=Stock('sh600123')
              % e.g.  S=Stock('600123')
              % e.g.  S=Stock('lhkc')
@@ -183,7 +184,7 @@ classdef Stock<handle
              Name={'Time','Volume','Price','Direction'};
              Val=cell2table(Val(end:-1:1,:),'VariableNames',Name)
          end % RealTick
-         function Val=HistoryTick(obj,Date) %历史逐笔交易
+         function Val=HistoryTick2(obj,Date) %历史逐笔交易
              %-----------------------------------------读取接口数据
              url=['http://stock.gtimg.cn/data/index.php?appn=detail&action=download&c=',obj.Code,'&d=',datestr(Date,'yyyymmdd')];           
              % 读取网页信息
@@ -197,6 +198,19 @@ classdef Stock<handle
              Val=cell2table([Val(:,1),num2cell(str2double(Val(:,2:5))),Val(:,6)],'VariableNames',Name);
 
          end % 腾讯
+         function Val=HistoryTick(obj,Date)
+             if obj.Code(1:2)=='sh'
+                 market=1;
+             else
+                 market=0;
+             end
+             code=obj.Code(3:end);
+             date=str2num(datestr(Date,'yyyymmdd'));
+             value=get_history_minute_time_data(market,code,date);
+             Name={'Price','Volume'};
+             Val=cell2table(num2cell(value),'VariableNames',Name);
+             
+         end
          
          function Val=Real1m(obj) % 实时1分钟数据
              %---------------------------------------读取接口数据
@@ -1145,7 +1159,7 @@ classdef Stock<handle
                 ,'买三量（手）','买四','买四量（手）','买五','买五量（手）','卖一','卖一量（手）','卖二','卖二量（手）','卖三','卖三量（手）'...
                 ,'卖四','卖四量（手）','卖五','卖五量（手）','最近逐笔成交','时间','涨跌','涨跌%','最高','最低','价格/成交量（手）/成交额','成交量（手）'...
                 ,'成交额（万）','换手率','市盈率','[blank]','最高','最低','振幅','流通市值','总市值','市净率','涨停价','跌停价','[blank]'};
-            Name={'Market','Name','Code','RealPrice','YClosePrice','OpenPrice','Volume','B','S','Buy1Price','Buy1Volume','Buy2Price','Buy2Volume','Buy3Price','Buy3Volume','Buy4Price','Buy4Volume','Buy5Price','Buy5Volume','Sell1Price','Sell1Volume','Sell2Price','Sell2Volume','Sell3Price','Sell3Volume','Sell4Price','Sell4Volume','Sell5Price','Sell5Volume','LastTransaction','LastTime','Rise','Yield','HighPrice','LowPrice','Price_Volume_Amount','Volume2','Amount','HSL','PE','State','High','Low','Amplitude','CirculationMarketValue','TotalMarketValue','PB','HardenPrice','LimitPrice','blank2','blank3','blank4','blank5','blank6','blank7','blank8','blank9','blank10'};
+            Name={'Market','Name','Code','RealPrice','YClosePrice','OpenPrice','Volume','B','S','Buy1Price','Buy1Volume','Buy2Price','Buy2Volume','Buy3Price','Buy3Volume','Buy4Price','Buy4Volume','Buy5Price','Buy5Volume','Sell1Price','Sell1Volume','Sell2Price','Sell2Volume','Sell3Price','Sell3Volume','Sell4Price','Sell4Volume','Sell5Price','Sell5Volume','LastTransaction','LastTime','Rise','Yield','HighPrice','LowPrice','Price_Volume_Amount','Volume2','Amount','HSL','PE','State','High','Low','Amplitude','CirculationMarketValue','TotalMarketValue','PB','HardenPrice','LimitPrice','blank2','blank3','blank4','blank5','blank6','blank7','blank8','blank9','blank10','blank11','blank12','blank13','blank14'};
 
             % 将标题与信息组合
               info=cell2table(S,'VariableNames',Name');

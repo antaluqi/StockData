@@ -45,7 +45,8 @@ classdef indicationBase<handle & matlab.mixin.Heterogeneous
                 end
                 %--------------------------------------
 
-                tableData=S.Indicators({obj.type},{obj.propertie},{startDay,endDay}); % 计算
+                tableData=timetable2table(S.Indicators({obj.type},{obj.propertie},{startDay,endDay})); % 计算
+                
                 obj.Data=[datenum(tableData.Date),tableData{:,7:end}];% 取出相应字段数据
             else
                 error('MainFigure没有数据源')
@@ -60,14 +61,12 @@ classdef indicationBase<handle & matlab.mixin.Heterogeneous
             reLoadData=obj.parent.Data;
             catch
                 disp('通知了已经被删除的对象')
-                obj
                 return
             end
             if ~isempty(reLoadData) 
                 pStr=strjoin(arrayfun(@(x) num2str(x),obj.propertie,'UniformOutput',0),'_'); % 参数字符化，如[15,2]变为'15_2'
                 if strcmp(obj.type,'CANDLE') % 如果指标是Candle，则取得相应字段数据
                     % obj.Data=extfield(reLoadData,{'Open','High','Close','Low','Volume'});
-
                      d=[reLoadData.High,reLoadData.Low,reLoadData.Close,reLoadData.Open,reLoadData.Volume]; %---------------------------------------
                      obj.Data=[d.dates,fts2mat(d)];%---------------------------------------
                 else                         % 如果指标是非Candle，则取得相应字段数据

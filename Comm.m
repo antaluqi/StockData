@@ -13,7 +13,11 @@ classdef Comm<handle
                 error('需要转换的数据应为table')
             end
             names=tableData.Properties.VariableNames;
-            ftsData=fints(datenum(tableData.Date),tableData{:,2:end},names(2:end));
+            if isa(tableData,'table')
+                ftsData=fints(datenum(tableData.Date),tableData{:,2:end},names(2:end));
+            elseif isa(tableData,'timetable') 
+                ftsData=fints(datenum(tableData.Date),tableData{:,1:end},names);
+            end
         end
         function outObj=setFindObj(MainFigureObj,findType,type,prop)
             if nargin <2

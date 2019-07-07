@@ -26,10 +26,10 @@ classdef MainFigure < handle
             addpath([cd,'\indication']);
             addpath([cd,'\customiza']);
             addpath([cd,'\stock']);
+            addpath([cd,'\stock\pytdx']);
             %--------------------------
             obj.Initialization     % 界面初始化
             obj.loadData;          % 加载数据（临时）
-            obj.Data
             %-------------------------加载回调程序
             obj.CrossLineSwitch=0;
             set(obj.hfig,'WindowButtonMotionFcn',{@obj.WindowButtonMotionFcn}) % 窗口鼠标移动回调
@@ -39,8 +39,9 @@ classdef MainFigure < handle
             %-------------------------
         end 
         function loadData(obj)  % 加载数据（为了方便）
-              CANDLE(obj,[1000,100]);        %K线图对象
+             
               obj.DataSource=Stock('sh000001'); % 加载数据源
+              CANDLE(obj,[1000,100]);        %K线图对象
               VOLUME(obj,1);                % 成交量对象
               %--------------------------------------table数据，两个日期
 %               Code=obj.DataSource.Code;
@@ -50,10 +51,10 @@ classdef MainFigure < handle
 %               tableData=cell2table([cellstr(repmat(Code,[size(tD,1),1])),tD],'VariableNames',{'Code','startDay','endDay',names{4:end}});
 %               obj.hResultTable.Data=tableData;
               %--------------------------------------table数据，单个日期
-              Code=obj.DataSource.Code;
-              ftsData=obj.Data;
-              names=fieldnames(ftsData);
-              tD=[cellstr(datestr(ftsData.dates(end-10:end))),num2cell(fts2mat(ftsData(end-13:end-3)))];
+%               Code=obj.DataSource.Code;
+%               ftsData=obj.Data;
+%               names=fieldnames(ftsData);
+%               tD=[cellstr(datestr(ftsData.dates(end-10:end))),num2cell(fts2mat(ftsData(end-13:end-3)))];
               %tableData=cell2table([cellstr(repmat(Code,[size(tD,1),1])),tD],'VariableNames',{'Code','Date',names{4:end}});
               try
                    tableData=readtable('C:\Users\17197\Desktop\Daniel\python\DataStorage\boll_test.xls');
