@@ -240,7 +240,7 @@ unzipsize=double(typecast(uint8(receive(end-1:end)),'uint16'));
 body_buf = zlibdecode(uint8(fread(t,zipsize)'));
 %fread(t,2048)';
 
-cmd=[20161214,1,double('600118')];
+cmd=[20190621,0,double('000858')];
 type='IBSSSSSS';
 cmd=[12,1,48,0,1,1,13,0,13,0,180,15,park(cmd,type)];
 fwrite(t,cmd);
@@ -258,7 +258,6 @@ else
     num=double(typecast(body_buf(1:2),'uint16'));
     last_price = 0;
     pos=pos+ 6;
-    %prices = [];
     out=[];
     for i=1:num
         [price_raw, pos] = get_price(body_buf, pos);

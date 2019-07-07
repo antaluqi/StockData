@@ -32,22 +32,25 @@ function out=get_history_minute_time_data(market,code,data)
    unzipsize=double(typecast(uint8(receive(end-1:end)),'uint16'));
    if zipsize<16
         out=[];
+        return;
+   elseif zipsize==unzipsize
+       body_buf=uint8(fread(t,zipsize)');
    else
-        body_buf = zlibdecode(uint8(fread(t,zipsize)'));
-        pos=1;
-        num=double(typecast(body_buf(1:2),'uint16'));
-        last_price = 0;
-        pos=pos+ 6;
-        %prices = [];
-        out=[];
-        for i=1:num
-            [price_raw, pos] = get_price(body_buf, pos);
-            [reversed1, pos] = get_price(body_buf, pos);
-            [vol, pos] = get_price(body_buf, pos);
-            last_price = last_price + price_raw;
-            price=double(last_price)/100;
-            out=[out;[price,double(vol)]];
-        end
+       body_buf = zlibdecode(uint8(fread(t,zipsize)'));
    end
+  pos=1;
+  num=double(typecast(body_buf(1:2),'uint16'));
+  last_price = 0;
+  pos=pos+ 6;
+  out=[];
+  for i=1:num
+      [price_raw, pos] = get_price(body_buf, pos);
+      [reversed1, pos] = get_price(body_buf, pos);
+      [vol, pos] = get_price(body_buf, pos);
+      last_price = last_price + price_raw;
+      price=double(last_price)/100;
+      out=[out;[price,double(vol)]];
+  end
+
    
 end

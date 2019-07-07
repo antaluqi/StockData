@@ -10,7 +10,7 @@ function [intdata,pos]=get_price(data,pos)
       if bitand(bdata,128)
          while 1
              pos=pos+ 1;
-             bdata =uint16(data(pos));
+             bdata =double(data(pos));
              intdata=intdata+bitshift(bitand(bdata,127),pos_byte);
              pos_byte=pos_byte+7;
              if bitand(bdata,128)
