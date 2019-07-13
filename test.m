@@ -269,4 +269,33 @@ else
     end
 end
 out
+%% =================================================================================
+% 黄金交易软件的一些登陆实验
+clear
+clc
+
+%GetSeqNo=[lower(dec2hex(int32(str2num(char(System.DateTime.Now.ToString("HHmmssfff")))))),'1',sMsgTail];
+sMsg='ca382b31180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
+provider=System.Security.Cryptography.RSACryptoServiceProvider();
+provider2=System.Security.Cryptography.RSACryptoServiceProvider();
+certificate=System.Security.Cryptography.X509Certificates.X509Certificate2(".\\GessTrader\\cert\\server.crt");
+xmlString = certificate.PublicKey.Key.ToXmlString(false);
+vSrcBuff=uint8(double(sMsg)); % 这里有可能会出错
+stream=System.IO.MemoryStream;
+for i=1:100:length(vSrcBuff)
+    rgb=vSrcBuff(i:min(i+100,length(vSrcBuff)));
+    buffer=provider2.Encrypt(rgb, false);
+    stream.Write(buffer, 0, buffer.Length);
+end
+%a=stream.ToArray()
+v_sHost="119.145.36.50";
+v_iPort=int16(20443);
+remoteEP=System.Net.IPEndPoint(System.Net.IPAddress.Parse(v_sHost),v_iPort);
+socket=System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,System.Net.Sockets.SocketType.Stream,System.Net.Sockets.ProtocolType.Tcp);
+socket.Connect(remoteEP)
+socket.Send(stream.ToArray(), System.Net.Sockets.SocketFlags.None);
+%----------
+% RecvByLen
+
+%----------
 
