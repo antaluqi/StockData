@@ -273,43 +273,108 @@ out
 % 黄金交易软件的一些登陆实验
 clear
 clc
-sMsgTail='180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
-sMsg=[lower(dec2hex(int32(str2num(char(System.DateTime.Now.ToString("HHmmssfff")))))),'1',sMsgTail];
-%sMsg='ca382b31180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
+
+%--------------------------------------------------------------------------
+% 发送的信息 最前面的是时间，精确到毫秒(凌晨会有错误，貌似时间长度缩短了，整个长度要保持在230) 
+sMsg='        180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
+%sMsg=[lower(dec2hex(int32(str2num(char(System.DateTime.Now.ToString("HHmmssfff")))))),'1',sMsgTail];
+sMsgNow=[lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF'))))),'1'];
+sMsgTail(1:length(sMsgNow))=sMsgNow;
+vSrcBuff=uint8(double(sMsg)); % 数据二进制化
+%--------------------------------------------------------------------------
+% RSA加密解密的各个对象建立（C#）,各编程语言会有区别
 provider=System.Security.Cryptography.RSACryptoServiceProvider();
 provider2=System.Security.Cryptography.RSACryptoServiceProvider();
 certificate=System.Security.Cryptography.X509Certificates.X509Certificate2(".\\GessTrader\\cert\\server.crt");
 xmlString = certificate.PublicKey.Key.ToXmlString(false);
-vSrcBuff=uint8(double(sMsg)); % 这里有可能会出错
-%vSrcBuff=System.Text.Encoding.Default.GetBytes(sMsg);
-stream=System.IO.MemoryStream;
+provider2.FromXmlString(xmlString);
+%--------------------------------------------------------------------------
+
+%stream=System.IO.MemoryStream;
+streamArr=[];
 for i=1:100:length(vSrcBuff)
-    rgb=vSrcBuff(i:min(i+100,length(vSrcBuff)));
-    buffer=provider2.Encrypt(rgb, false);
-    stream.Write(buffer, 0, buffer.Length);
+    %rgb=NET.convertArray(vSrcBuff(i:min(i+99,length(vSrcBuff))));
+    rgb=vSrcBuff(i:min(i+99,length(vSrcBuff)));
+    buffer=provider2.Encrypt(NET.convertArray(rgb), false);
+    %stream.Write(buffer, 0, buffer.Length);
+    streamArr=[streamArr,buffer.int16];
 end
-a=stream.ToArray().int8();
+
+
 v_sHost="119.145.36.50";
 v_iPort=int16(20443);
 remoteEP=System.Net.IPEndPoint(System.Net.IPAddress.Parse(v_sHost),v_iPort);
 socket=System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.InterNetwork,System.Net.Sockets.SocketType.Stream,System.Net.Sockets.ProtocolType.Tcp);
-socket.ReceiveTimeout=2000;
+socket.ReceiveTimeout=3000;
 socket.Connect(remoteEP)
 socket.Send(System.Text.Encoding.Default.GetBytes("00000384"), System.Net.Sockets.SocketFlags.None);
-socket.Send(stream.ToArray(), System.Net.Sockets.SocketFlags.None);
-%----------
+%socket.Send(stream.ToArray(), System.Net.Sockets.SocketFlags.None);
+socket.Send(NET.convertArray(streamArr,'System.Byte'), System.Net.Sockets.SocketFlags.None);
 % RecvByLen
-buffer=NET.createArray('System.Byte', 8);
-num=socket.Receive(buffer,8,System.Net.Sockets.SocketFlags.None);
-buffer.double()
+buffer4=NET.createArray('System.Byte', 8);
+socket.Receive(buffer4,8,System.Net.Sockets.SocketFlags.None);
+num=str2num(char(buffer4.int8));
+buffer5=NET.createArray('System.Byte',num );
+socket.Receive(buffer5,num,System.Net.Sockets.SocketFlags.None);
+certificate=System.Security.Cryptography.X509Certificates.X509Certificate2(".\\GessTrader\\cert\\client.pfx","123456",System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable);
+str2 = certificate.PrivateKey.ToXmlString(true);
+provider.FromXmlString(str2);
+stream=System.IO.MemoryStream;
+b5=buffer5.int16;
+for i=1:128:buffer5.Length
+    buffer6=NET.convertArray(b5(i:i+127),'System.Byte');
+    buffer7 = provider.Decrypt(buffer6, false);
+    stream.Write(buffer7, 0, buffer7.Length);
+end
+System.Text.Encoding.Default.GetString(stream.ToArray())
+
 %----------
 socket.Close()
 
-% t = tcpip('119.145.36.50', 20443,'NetworkRole','Client');
-% set(t,'InputBufferSize',4500);
-% set(t,'Timeout',10);
-% fopen(t);
-% fwrite(t,int8(double('00000384')));
-% fwrite(t,a);
-% receive = fread(t, 8)'
-% fclose(t)
+%% =========================================================================================================================
+% 登陆接口matlab化
+clear
+clc
+% 发送的信息 最前面的是时间，精确到毫秒(凌晨会有错误，貌似时间长度缩短了，整个长度要保持在230) 
+sMsg='        180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
+sMsgNow=[lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF'))))),'1'];
+sMsgTail(1:length(sMsgNow))=sMsgNow;
+vSrcBuff=uint8(double(sMsg)); % 数据二进制化
+
+% RSA加密解密的各个对象建立（C#）,各编程语言会有区别
+provider=System.Security.Cryptography.RSACryptoServiceProvider();
+provider2=System.Security.Cryptography.RSACryptoServiceProvider();
+certificate=System.Security.Cryptography.X509Certificates.X509Certificate2(".\\GessTrader\\cert\\server.crt");
+xmlString = certificate.PublicKey.Key.ToXmlString(false);
+provider2.FromXmlString(xmlString);
+
+% 数据加密
+streamArr=[];
+for i=1:100:length(vSrcBuff)
+    rgb=vSrcBuff(i:min(i+99,length(vSrcBuff)));
+    buffer=provider2.Encrypt(NET.convertArray(rgb), false);% C#
+    streamArr=[streamArr,buffer.int16];
+end
+
+t = tcpip('119.145.36.50', 20443,'NetworkRole','Client');
+set(t,'InputBufferSize',4500);
+set(t,'Timeout',5);
+fopen(t);
+fwrite(t,num2str(length(streamArr),'%08d'));
+fwrite(t,streamArr);
+buffer4 = fread(t, 8)';
+buffer5 = int16(fread(t,str2num(char(buffer4)))');
+fclose(t)
+% RSA 解密的各个对象建立(C#)
+certificate=System.Security.Cryptography.X509Certificates.X509Certificate2(".\\GessTrader\\cert\\client.pfx","123456",System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.Exportable);
+xmlString2 = certificate.PrivateKey.ToXmlString(true);
+provider.FromXmlString(xmlString2);
+
+streamArr=[];
+% 数据解密
+for i=1:128:length(buffer5)
+    buffer6=buffer5(i:i+127);
+    buffer7 = provider.Decrypt(NET.convertArray(buffer6,'System.Byte'), false); %C#
+    streamArr=[streamArr,buffer7.int16];
+end
+str=native2unicode(streamArr)
