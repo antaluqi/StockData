@@ -338,7 +338,7 @@ clc
 % 发送的信息 最前面的是时间，精确到毫秒(凌晨会有错误，貌似时间长度缩短了，整个长度要保持在230) 
 sMsg='        180061032 1021805322                                    #bank_no=0015#login_ip=192.168.137.1#net_agent=1#net_envionment=2#oper_flag=1#user_id=1021805322#user_id_type=1#user_pwd=80d2f4983572a7d5f8f96a924c18368d#user_type=2#';
 sMsgNow=[lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF'))))),'1'];
-sMsgTail(1:length(sMsgNow))=sMsgNow;
+sMsg(1:length(sMsgNow))=sMsgNow;
 vSrcBuff=uint8(double(sMsg)); % 数据二进制化
 
 % RSA加密解密的各个对象建立（C#）,各编程语言会有区别
