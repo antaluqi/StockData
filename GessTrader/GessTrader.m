@@ -15,6 +15,7 @@ classdef GessTrader< handle
             iSSLServerPort
             timeout
             ServerInfo
+            CustomInfo
     end
     
     methods
@@ -33,7 +34,7 @@ classdef GessTrader< handle
             obj.timeout=5;
         end
         
-        function islogin = Connect(obj)
+        function islogin = login(obj)
             % 连接登陆服务器
             sMsg=obj.getsMsg;
             vSrcBuff=uint8(double(sMsg)); % 数据二进制化
@@ -83,6 +84,110 @@ classdef GessTrader< handle
 
         end
 
+        function str=getCustomInfo(obj)
+            % TransForNormal
+            % 建立发送消息的字符串
+            v_reqMsg.acct_no='1021805322';
+            v_reqMsg.is_check_stat='1';
+            v_reqMsg.oper_flag='1';
+            v_reqMsg.qry_cust_info='1';
+            v_reqMsg.qry_defer='1';
+            v_reqMsg.qry_forward='1';
+            v_reqMsg.qry_fund='1';
+            v_reqMsg.qry_storage='1';
+            v_reqMsg.qry_surplus='1';
+
+            v_reqMsg_str=['#acct_no=',v_reqMsg.acct_no,...
+                          '#is_check_stat=',v_reqMsg.is_check_stat,...
+                          '#oper_flag=',v_reqMsg.oper_flag,...
+                          '#qry_cust_info=',v_reqMsg.qry_cust_info,...
+                          '#qry_defer=',v_reqMsg.qry_defer,...
+                          '#qry_forward=',v_reqMsg.qry_forward,...
+                          '#qry_fund=',v_reqMsg.qry_fund,...
+                          '#qry_storage=',v_reqMsg.qry_storage,...
+                          '#qry_surplus=',v_reqMsg.qry_surplus,'#'];
+
+
+            GReqHead.area_code='';
+            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
+            GReqHead.c_teller_id1='';
+            GReqHead.c_teller_id2='';	
+            GReqHead.exch_code='1020';	% 消息类型
+            GReqHead.msg_flag='1';	
+            GReqHead.msg_len='';	
+            GReqHead.msg_type='1';	
+            GReqHead.seq_no=lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF')))));
+            GReqHead.term_type='03';	
+            GReqHead.user_id=obj.user_id;	
+            GReqHead.user_type='2';	
+            %---------------------
+            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
+                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
+                          ];
+            % 合并消息字符串
+            str=[GReqHead_Str,v_reqMsg_str];
+            %SendGoldMsg
+            v_sMsg=[GessTrader.fill(num2str(length(str)),'0',8,'L'),str];
+            bSrcMsgBuff=int8(v_sMsg);
+            %TripleDes.encryptMsg
+            iEncryptMode=2;
+            SESSION_KEY='240262447423713749922240'; % 为什么用这个？
+            %encrypt
+            %-------------------加密（C#）
+            key=NET.convertArray(int8(SESSION_KEY),"System.Byte");   %SESSION_KEY
+            ivByte=NET.convertArray(int8('12345678'),"System.Byte"); %加密密码？
+            value=NET.convertArray(bSrcMsgBuff,"System.Byte");       %要加密的值
+            stream = System.IO.MemoryStream;
+            TDS=System.Security.Cryptography.TripleDESCryptoServiceProvider;
+            stream2=System.Security.Cryptography.CryptoStream(stream,TDS.CreateEncryptor(key, ivByte),System.Security.Cryptography.CryptoStreamMode.Write);
+            stream2.Write(value, 0, value.Length);
+            stream2.FlushFinalBlock();
+            sourceArray=stream.ToArray().int16;
+            stream.Close();
+            stream2.Close();
+            %-------------------
+            %encryptMsg;
+            %destinationArray=NET.createArray("System.Byte",8+1+10+length(sourceArray));
+            destinationArray_len=8+1+10+length(sourceArray); % 8位数据长度，1位iEncryptMode=2，10位SESSION_KEY长度，其余是数据本提sourceArray的长度
+            destinationArray=[int16(GessTrader.fill(num2str(destinationArray_len-8),'0',8,'L')),...
+                              int16(2),...
+                              int16(GessTrader.fill(obj.ServerInfo.session_id,' ',10,'R')),...
+                              sourceArray];
+                          
+            %SendGoldMsg
+            buffer=destinationArray;   
+             % 建立Socket连接,发送和接受数据
+            socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
+            set(socket,'InputBufferSize',4500);
+            set(socket,'Timeout',3);
+            fopen(socket);
+            fwrite(socket,buffer);     % 发送请求数据
+            revLen_str=fread(socket,8);% 接受数据位数
+            revLen=str2double(char(revLen_str)');
+            vReadBytes=int16(fread(socket,revLen)); % 接受数据本体
+            fclose(socket)
+            % 是否需要解压缩
+            if length(vReadBytes)>1 && vReadBytes(1)==1
+                bytes=vReadBytes(2:end);
+                buffer2=gzipdecode(uint8(bytes));
+                arrLfvMsg=buffer2(9:end);
+            else
+                arrLfvMsg=int16(vReadBytes);
+            end
+            % 转化为字符串
+            str=native2unicode(arrLfvMsg);
+            obj.splitCunstomInfo(str);
+        end
+        
         function sMsg=getsMsg(obj)
             % 组合登陆字符串
             sMsgHead='        180061032 1021805322                                    ';
@@ -108,8 +213,36 @@ classdef GessTrader< handle
                 end
                 eval(['obj.ServerInfo.',name,'=','value;']);
             end
-            
+        end
+        
+        function  splitCunstomInfo(obj,str)
+            scell0=strsplit(str,{'#','='});
+            scell=scell0(2:end-1);
+            for i=1:2:length(scell)
+                name=scell{i};
+                value=scell{i+1};
+                eval(['obj.CustomInfo.',name,'=','value;']);
+            end
         end
     end
+    methods(Static)
+        function str=fill(v_sSrc,v_cFill,v_iLen,v_cDire)
+            if length(v_sSrc)>=v_iLen
+                str=v_sSrc;
+                return;
+            end
+            str=repmat(v_cFill,1,v_iLen);
+            if strcmp(v_cDire,'R')
+                str(1:length(v_sSrc))=v_sSrc;
+            elseif strcmp(v_cDire,'L')
+                str(end-length(v_sSrc)+1:end)=v_sSrc;
+            else
+                error('fill函数的v_cDire参数输入错误，应该为R或L');
+            end
+            
+        end
+        
+    end
+    
 end
 
