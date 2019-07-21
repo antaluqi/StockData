@@ -16,12 +16,13 @@ classdef GessTrader< handle
             timeout
             ServerInfo
             CustomInfo
+            FieldName
     end
     
     methods
         function obj = GessTrader(user_id,user_pwd)
             obj.bank_no='0015';
-            obj.login_ip='192.168.137.1';
+            obj.login_ip= '192.168.1.118';       % '192.168.137.1';
             obj.net_agent='1';
             obj.net_envionment='2';
             obj.oper_flag='1';
@@ -32,6 +33,7 @@ classdef GessTrader< handle
             obj.sSSLServerHost='119.145.36.50';
             obj.iSSLServerPort=20443;
             obj.timeout=5;
+            obj.setFieldName
         end
         
         function islogin = login(obj)
@@ -74,7 +76,8 @@ classdef GessTrader< handle
                 streamArr=[streamArr,buffer7.int16];
             end
             str=native2unicode(streamArr);
-            obj.splitServerInfo(str);
+            SInfo=GessTrader.splitServerInfo(str);
+            obj.ServerInfo=SInfo;
             if isfield(obj.ServerInfo,'rsp_msg') && strcmp(obj.ServerInfo.rsp_msg,'处理成功')
                  islogin=1;
             else
@@ -197,22 +200,24 @@ classdef GessTrader< handle
             
         end
         
-        function splitServerInfo(obj,str)
-            scell0=strsplit(str,{'#','='});
-            scell=scell0(2:end-1);
-            for i=1:2:length(scell)
-                name=scell{i};
-                value=scell{i+1};
-                if strcmp(name,'htm_server_list')
-                    htm_server_list_cell=split(value,{'ˇ','｜','∧'});
-                    htm_server_list_cell=htm_server_list_cell([1:14,16:end-3]);
-                    for j=1:length(htm_server_list_cell)/2
-                        eval(['v.',htm_server_list_cell{j},'=''',htm_server_list_cell{j+14},''';']);
-                    end
-                    value=v;
-                end
-                eval(['obj.ServerInfo.',name,'=','value;']);
-            end
+        function setFieldName(obj)
+             obj.FieldName{31}='ApiName';
+             obj.FieldName{49}='RspCode';
+             obj.FieldName{54}='Ts_NodeID';
+             obj.FieldName{650}='instID';
+             obj.FieldName{1170}='state';
+             obj.FieldName{785}='marketID';
+             obj.FieldName{786}='marketState';
+             obj.FieldName{48}='RootID';
+             obj.FieldName{50}='RspMsg';
+             obj.FieldName{483}='effectDate';
+             obj.FieldName{549}='feeRate';
+             obj.FieldName{1086}='sys_date  ';
+             obj.FieldName{504}='exch_date';
+             obj.FieldName{773}='m_sys_stat';
+             obj.FieldName{253}='b_sys_stat';
+             obj.FieldName{951}='quoteDate';
+             obj.FieldName{1006}='sZipBuff';
         end
         
         function  splitCunstomInfo(obj,str)
@@ -240,6 +245,31 @@ classdef GessTrader< handle
                 error('fill函数的v_cDire参数输入错误，应该为R或L');
             end
             
+        end
+        
+        function ServerInfo=splitServerInfo(str)
+            scell0=strsplit(str,{'#','='});
+            scell=scell0(2:end-1);
+            for i=1:2:length(scell)
+                name=scell{i};
+                value=scell{i+1};
+                if strcmp(name,'htm_server_list')
+                    htm_server_list_cell=split(value,{'ˇ','｜','∧'});
+                    htm_server_list_cell=htm_server_list_cell([1:14,16:end-3]);
+                    for j=1:length(htm_server_list_cell)/2
+                        eval(['v.',htm_server_list_cell{j},'=''',htm_server_list_cell{j+14},''';']);
+                    end
+                    value=v;
+                end
+                eval(['ServerInfo.',name,'=','value;']);
+            end
+        end
+        
+        function num=byteToInt(arrLfvMsg,iOffset,iLen)
+             num = 0;
+             for i=iOffset:iOffset+iLen-1
+                 num=num+bitshift(bitand(arrLfvMsg(i),255),(8 * ((iLen - 1) - (i - iOffset))));
+             end
         end
         
     end
