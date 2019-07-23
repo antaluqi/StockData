@@ -22,7 +22,7 @@ classdef GessTrader< handle
     methods
         function obj = GessTrader(user_id,user_pwd)
             obj.bank_no='0015';
-            obj.login_ip= '192.168.1.118';       % '192.168.137.1';
+            obj.login_ip= GessTrader.getLocalIP();
             obj.net_agent='1';
             obj.net_envionment='2';
             obj.oper_flag='1';
@@ -87,7 +87,7 @@ classdef GessTrader< handle
 
         end
 
-        function str=getCustomInfo(obj)
+        function getCustomInfo(obj)
             % TransForNormal
             % 建立发送消息的字符串
             v_reqMsg.acct_no='1021805322';
@@ -177,7 +177,7 @@ classdef GessTrader< handle
             revLen_str=fread(socket,8);% 接受数据位数
             revLen=str2double(char(revLen_str)');
             vReadBytes=int16(fread(socket,revLen)); % 接受数据本体
-            fclose(socket)
+            fclose(socket);
             % 是否需要解压缩
             if length(vReadBytes)>1 && vReadBytes(1)==1
                 bytes=vReadBytes(2:end);
@@ -272,6 +272,11 @@ classdef GessTrader< handle
              end
         end
         
+        function ip=getLocalIP()
+            [~,result]=dos('ipconfig');
+            [~,token]=regexp(result,'IPv4 地址 . . . . . . . . . . . . : (\d+.\d.+.\d+.\d+).*?子网掩码' ,'match', 'tokens');
+            ip=token{:}{:};
+        end
     end
     
 end
