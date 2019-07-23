@@ -371,75 +371,46 @@ arrLfvMsg=buffer(9:end);
 native2unicode(arrLfvMsg)
 
 %% =================================================================================
-% 黄金交易软件接受客户信息测试
+% 黄金交易软件报价测试
 clear
 clc
-
+infoArr=[];
 g=GessTrader('1021805322','615919');
 g.login;
 
-% TransForNormal
-v_reqMsg.acct_no='1021805322';
-v_reqMsg.is_check_stat='1';
-v_reqMsg.oper_flag='1';
-v_reqMsg.qry_cust_info='1';
-v_reqMsg.qry_defer='1';
-v_reqMsg.qry_forward='1';
-v_reqMsg.qry_fund='1';
-v_reqMsg.qry_storage='1';
-v_reqMsg.qry_surplus='1';
+GBcMsgReqLink.RspCode='';	
+GBcMsgReqLink.RspMsg='';
+GBcMsgReqLink.again_flag='0';
+GBcMsgReqLink.branch_id=g.ServerInfo.branch_id;
+GBcMsgReqLink.cust_type_id='C01';
+GBcMsgReqLink.is_lfv='1';
+GBcMsgReqLink.lan_ip=g.login_ip;
+GBcMsgReqLink.term_type='';
+GBcMsgReqLink.user_id=g.user_id;
+GBcMsgReqLink.user_key=datestr(now,'HHMMSSFFF');
+GBcMsgReqLink.user_pwd=g.user_pwd;
+GBcMsgReqLink.user_type=g.user_type;
+GBcMsgReqLink.www_ip='';
 
-v_reqMsg_str=['#acct_no=',v_reqMsg.acct_no,...
-              '#is_check_stat=',v_reqMsg.is_check_stat,...
-              '#oper_flag=',v_reqMsg.oper_flag,...
-              '#qry_cust_info=',v_reqMsg.qry_cust_info,...
-              '#qry_defer=',v_reqMsg.qry_defer,...
-              '#qry_forward=',v_reqMsg.qry_forward,...
-              '#qry_fund=',v_reqMsg.qry_fund,...
-              '#qry_storage=',v_reqMsg.qry_storage,...
-              '#qry_surplus=',v_reqMsg.qry_surplus,'#'];
-
-
-GReqHead.area_code='';
-GReqHead.branch_id=g.ServerInfo.branch_id;           %"B00151853";
-GReqHead.c_teller_id1='';
-GReqHead.c_teller_id2='';	
-GReqHead.exch_code='1020';	
-GReqHead.msg_flag='1';	
-GReqHead.msg_len='';	
-GReqHead.msg_type='1';	
-GReqHead.seq_no=lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF')))));
-GReqHead.term_type='03';	
-GReqHead.user_id=g.user_id;	
-GReqHead.user_type='2';	
-%---------------------
-GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
-              GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
-              GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
-              GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
-              GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
-              GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
-              GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
-              GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
-              GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
-              GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
-              GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
-              ];
-str=[GReqHead_Str,v_reqMsg_str];
-
-%SendGoldMsg
+str=['#again_flag=',GBcMsgReqLink.again_flag,...
+    '#branch_id=',GBcMsgReqLink.branch_id,...
+    '#cust_type_id=',GBcMsgReqLink.cust_type_id,'∧'...
+    '#is_lfv=',GBcMsgReqLink.is_lfv,...
+    '#lan_ip=',GBcMsgReqLink.lan_ip,...
+    '#user_id=',GBcMsgReqLink.user_id,...
+    '#user_key=',GBcMsgReqLink.user_key,...
+    '#user_pwd=',GBcMsgReqLink.user_pwd,...
+    '#user_type=',GBcMsgReqLink.user_type,'#'];
 v_sMsg=[GessTrader.fill(num2str(length(str)),'0',8,'L'),str];
 bSrcMsgBuff=int8(v_sMsg);
 %TripleDes.encryptMsg
 iEncryptMode=2;
 SESSION_KEY='240262447423713749922240'; % 为什么用这个？
-
-
-%---------------------------
 %encrypt
-key=NET.convertArray(int8(SESSION_KEY),"System.Byte");
-ivByte=NET.convertArray(int8('12345678'),"System.Byte");
-value=NET.convertArray(bSrcMsgBuff,"System.Byte");
+%-------------------加密（C#）
+key=NET.convertArray(int8(SESSION_KEY),"System.Byte");   %SESSION_KEY
+ivByte=NET.convertArray(int8('12345678'),"System.Byte"); %加密密码？
+value=NET.convertArray(bSrcMsgBuff,"System.Byte");       %要加密的值
 stream = System.IO.MemoryStream;
 TDS=System.Security.Cryptography.TripleDESCryptoServiceProvider;
 stream2=System.Security.Cryptography.CryptoStream(stream,TDS.CreateEncryptor(key, ivByte),System.Security.Cryptography.CryptoStreamMode.Write);
@@ -448,32 +419,60 @@ stream2.FlushFinalBlock();
 sourceArray=stream.ToArray().int16;
 stream.Close();
 stream2.Close();
+%-------------------
 %encryptMsg;
 %destinationArray=NET.createArray("System.Byte",8+1+10+length(sourceArray));
-destinationArray_len=8+1+10+length(sourceArray);
+destinationArray_len=8+1+10+length(sourceArray); % 8位数据长度，1位iEncryptMode=2，10位SESSION_KEY长度，其余是数据本提sourceArray的长度
 destinationArray=[int16(GessTrader.fill(num2str(destinationArray_len-8),'0',8,'L')),...
                   int16(2),...
                   int16(GessTrader.fill(g.ServerInfo.session_id,' ',10,'R')),...
                   sourceArray];
- %SendGoldMsg
- buffer=destinationArray;
- % 建立Socket连接
-socket = tcpip(g.ServerInfo.htm_server_list.trans_ip, str2double(g.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
+
+%SendGoldMsg
+buffer=destinationArray;   
+ % 建立Socket连接,发送和接受数据
+socket = tcpip(g.ServerInfo.htm_server_list.broadcast_ip, str2double(g.ServerInfo.htm_server_list.broadcast_port),'NetworkRole','Client');
 set(socket,'InputBufferSize',4500);
 set(socket,'Timeout',3);
 fopen(socket);
-fwrite(socket,buffer);
-revLen_str=fread(socket,8);
-revLen=str2double(char(revLen_str)');
-vReadBytes=int16(fread(socket,revLen));
-fclose(socket);
-if length(vReadBytes)>1 && vReadBytes(1)==1
-    bytes=vReadBytes(2:end);
-    buffer2=gzipdecode(uint8(bytes));
-    arrLfvMsg=buffer2(9:end);
-else
-    arrLfvMsg=int16(vReadBytes);
+fwrite(socket,buffer);     % 发送请求数据
+for xx=1:44
+    xx
+    revLen_str=fread(socket,8);% 接受数据位数
+    revLen=str2double(char(revLen_str)');
+    vReadBytes=int16(fread(socket,revLen)); % 接受数据本体
+    %fclose(socket)
+    % 是否需要解压缩
+    if length(vReadBytes)>1 && vReadBytes(1)==1
+        bytes=vReadBytes(2:end);
+        buffer2=gzipdecode(uint8(bytes));
+        arrLfvMsg=buffer2(9:end);
+    else
+        arrLfvMsg=int16(vReadBytes);
+    end
+    % 转化为字符串
+    %lfvToKv
+    if length(arrLfvMsg)>8 && arrLfvMsg(1)==35 && arrLfvMsg(2)==76 && arrLfvMsg(3)==102 && arrLfvMsg(4)==118 && arrLfvMsg(5)==77 && arrLfvMsg(6)==115 && arrLfvMsg(7)==103 && arrLfvMsg(8)==61
+         iStartIndex=9;
+         iEndIndex=length(arrLfvMsg)-2;
+         iOffset=iStartIndex;
+         jsStr=[];
+         while iOffset<iEndIndex
+            num2=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
+            iOffset=iOffset+2;
+            idx=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
+            %-----------------
+            if ~any(infoArr==idx)
+               infoArr=[infoArr,idx];
+            end
+            %-----------------
+            iOffset=iOffset+2;
+            str=native2unicode(arrLfvMsg(iOffset:iOffset+num2-2)');
+            iOffset=iOffset+num2-2;
+            jsStr=[jsStr,'#',g.FieldName{idx},'=',str];
+         end
+    end
+    jsStr
 end
-
-native2unicode(arrLfvMsg)
-
+fclose(socket)
+infoArr
