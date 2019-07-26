@@ -374,7 +374,6 @@ native2unicode(arrLfvMsg)
 % 黄金交易软件报价测试
 clear
 clc
-infoArr=[];
 g=GessTrader('1021805322','615919');
 g.login;
 
@@ -461,11 +460,6 @@ for xx=1:44
             num2=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
             iOffset=iOffset+2;
             idx=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
-            %-----------------
-            if ~any(infoArr==idx)
-               infoArr=[infoArr,idx];
-            end
-            %-----------------
             iOffset=iOffset+2;
             str=native2unicode(arrLfvMsg(iOffset:iOffset+num2-2)');
             iOffset=iOffset+num2-2;
@@ -475,4 +469,3 @@ for xx=1:44
     jsStr
 end
 fclose(socket)
-infoArr

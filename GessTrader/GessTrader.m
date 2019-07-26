@@ -87,14 +87,14 @@ classdef GessTrader< handle
 
         end
 
-        function getCustomInfo(obj)
+        function getCustomInfo2(obj)
             % TransForNormal
             % 建立发送消息的字符串
             v_reqMsg.acct_no='1021805322';
             v_reqMsg.is_check_stat='1';
             v_reqMsg.oper_flag='1';
             v_reqMsg.qry_cust_info='1';
-            v_reqMsg.qry_defer='1';
+            v_reqMsg.qry_defer='1'; 
             v_reqMsg.qry_forward='1';
             v_reqMsg.qry_fund='1';
             v_reqMsg.qry_storage='1';
@@ -119,7 +119,7 @@ classdef GessTrader< handle
             GReqHead.msg_flag='1';	
             GReqHead.msg_len='';	
             GReqHead.msg_type='1';	
-            GReqHead.seq_no=lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF')))));
+            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
             GReqHead.term_type='03';	
             GReqHead.user_id=obj.user_id;	
             GReqHead.user_type='2';	
@@ -191,6 +191,216 @@ classdef GessTrader< handle
             obj.splitCunstomInfo(str);
         end
         
+        function getCustomInfo(obj)
+            % TransForNormal
+            % 建立发送消息的字符串
+            v_reqMsg.acct_no=obj.user_id;
+            v_reqMsg.is_check_stat='1';
+            v_reqMsg.oper_flag='1';
+            v_reqMsg.qry_cust_info='1';
+            v_reqMsg.qry_defer='1'; 
+            v_reqMsg.qry_forward='1';
+            v_reqMsg.qry_fund='1';
+            v_reqMsg.qry_storage='1';
+            v_reqMsg.qry_surplus='1';
+
+            v_reqMsg_str=['#acct_no=',v_reqMsg.acct_no,...
+                          '#is_check_stat=',v_reqMsg.is_check_stat,...
+                          '#oper_flag=',v_reqMsg.oper_flag,...
+                          '#qry_cust_info=',v_reqMsg.qry_cust_info,...
+                          '#qry_defer=',v_reqMsg.qry_defer,...
+                          '#qry_forward=',v_reqMsg.qry_forward,...
+                          '#qry_fund=',v_reqMsg.qry_fund,...
+                          '#qry_storage=',v_reqMsg.qry_storage,...
+                          '#qry_surplus=',v_reqMsg.qry_surplus,'#'];
+
+
+            GReqHead.area_code='';
+            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
+            GReqHead.c_teller_id1='';
+            GReqHead.c_teller_id2='';	
+            GReqHead.exch_code='1020';	% 消息类型
+            GReqHead.msg_flag='1';	
+            GReqHead.msg_len='';	
+            GReqHead.msg_type='1';	
+            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
+            GReqHead.term_type='03';	
+            GReqHead.user_id=obj.user_id;	
+            GReqHead.user_type='2';	
+            %---------------------
+            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
+                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
+                          ];
+            % 合并消息字符串
+            str=[GReqHead_Str,v_reqMsg_str];
+           % 建立Socket连接,发送和接受数据
+            socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
+            set(socket,'InputBufferSize',4500);
+            set(socket,'Timeout',3);
+            fopen(socket);
+            obj.SendGoldMsg(socket,str);
+            str=obj.RecvGoldMsg(socket);
+            fclose(socket);
+            obj.splitCunstomInfo(str);
+        end
+        
+        function getQuote(obj)
+            GBcMsgReqLink.RspCode='';	
+            GBcMsgReqLink.RspMsg='';
+            GBcMsgReqLink.again_flag='0';
+            GBcMsgReqLink.branch_id=obj.ServerInfo.branch_id;
+            GBcMsgReqLink.cust_type_id='C01';
+            GBcMsgReqLink.is_lfv='1';
+            GBcMsgReqLink.lan_ip=obj.login_ip;
+            GBcMsgReqLink.term_type='';
+            GBcMsgReqLink.user_id=obj.user_id;
+            GBcMsgReqLink.user_key=datestr(now,'HHMMSSFFF');
+            GBcMsgReqLink.user_pwd=obj.user_pwd;
+            GBcMsgReqLink.user_type=obj.user_type;
+            GBcMsgReqLink.www_ip='';
+
+            str=['#again_flag=',GBcMsgReqLink.again_flag,...
+                '#branch_id=',GBcMsgReqLink.branch_id,...
+                '#cust_type_id=',GBcMsgReqLink.cust_type_id,'∧'...
+                '#is_lfv=',GBcMsgReqLink.is_lfv,...
+                '#lan_ip=',GBcMsgReqLink.lan_ip,...
+                '#user_id=',GBcMsgReqLink.user_id,...
+                '#user_key=',GBcMsgReqLink.user_key,...
+                '#user_pwd=',GBcMsgReqLink.user_pwd,...
+                '#user_type=',GBcMsgReqLink.user_type,'#'];
+             % 建立Socket连接,发送和接受数据
+            socket = tcpip(obj.ServerInfo.htm_server_list.broadcast_ip, str2double(obj.ServerInfo.htm_server_list.broadcast_port),'NetworkRole','Client');
+            set(socket,'InputBufferSize',4500);
+            set(socket,'Timeout',3);
+            fopen(socket);
+            
+            obj.SendGoldMsg(socket,str);
+            for i=1:44
+                str=obj.RecvGoldMsg(socket)
+            end
+             fclose(socket);
+        end
+    end
+    
+    methods(Access=private)
+        
+        function SendGoldMsg(obj,socket,v_sMsg)
+            v_sMsg=[GessTrader.fill(num2str(length(v_sMsg)),'0',8,'L'),v_sMsg];
+            bSrcMsgBuff=int8(v_sMsg);
+            buffer=obj.TripleDes_encryptMsg(2, bSrcMsgBuff);
+            fwrite(socket,buffer);     % 发送请求数据
+        end
+        
+        function str=RecvGoldMsg(obj,socket)
+%             if socket==''
+%                 str=''
+%                return
+%             end
+              num=str2double(char(obj.RecvByLen(socket,8)));
+              vReadBytes=obj.RecvByLen(socket,num);
+              arrLfvMsg=obj.TripleDes_decryptMsg(obj.unzipReadBytes(vReadBytes));
+              if length(arrLfvMsg)>8 && arrLfvMsg(1)==35 && arrLfvMsg(2)==76 && arrLfvMsg(3)==102 && arrLfvMsg(4)==118 && arrLfvMsg(5)==77 && arrLfvMsg(6)==115 && arrLfvMsg(7)==103 && arrLfvMsg(8)==61
+                  str=obj.GlobalLfvTransfer_lfvToKv(arrLfvMsg,9,length(arrLfvMsg)-2);
+              else
+                  str=native2unicode(arrLfvMsg); 
+              end
+        
+        
+        end
+         
+        function buffer=RecvByLen(obj,socket,v_iRecvLen)
+            num=0;
+            buffer=[];
+            while num<v_iRecvLen
+                size = v_iRecvLen - num;
+                if size>1024
+                    size=1024;
+                end
+                buffer2=fread(socket,size);
+                num3=length(buffer2);
+                if num3>0
+                   buffer=[buffer,buffer2];
+                   num=num+num3;
+                else
+                    error('无数据，可能被远程主机强制关闭')
+                end
+            end
+            buffer=int16(buffer);
+        end
+        
+        function buffer=TripleDes_encryptMsg(obj,iEncryptMode, bSrcMsgBuff)
+            if iEncryptMode==2 || iEncryptMode==3 
+                SESSION_KEY='240262447423713749922240'; % 为什么用这个？
+                if iEncryptMode==3 && isempty(obj.CustomInfo.SESSION_KEY)
+                    SESSION_KEY=obj.CustomInfo.SESSION_KEY;
+                end
+                IV_DEFAULT='12345678';
+                sourceArray=obj.encrypt(SESSION_KEY,IV_DEFAULT,bSrcMsgBuff);
+                destinationArray_len=8+1+10+length(sourceArray); % 8位数据长度，1位iEncryptMode=2，10位SESSION_KEY长度，其余是数据本提sourceArray的长度
+                destinationArray=[int16(GessTrader.fill(num2str(destinationArray_len-8),'0',8,'L')),...
+                                  int16(2),...
+                                  int16(GessTrader.fill(obj.ServerInfo.session_id,' ',10,'R')),...
+                                  sourceArray]; 
+                buffer=destinationArray;
+                return;
+            end
+            buffer=bSrcMsgBuff;
+        end
+        
+        function buffer=TripleDes_decryptMsg(obj,bDecryptMsgBuff)
+            %
+            %sth more
+            buffer=bDecryptMsgBuff;
+        end
+        
+        function arrLfvMsg=unzipReadBytes(obj,vReadBytes)
+            if length(vReadBytes)>1 && vReadBytes(1)==1
+                bytes=vReadBytes(2:end);
+                buffer2=gzipdecode(uint8(bytes));
+                arrLfvMsg=buffer2(9:end);
+            else
+                arrLfvMsg=int16(vReadBytes);
+            end
+        end
+        
+        function sourceArray=encrypt(obj,key,ivByte,value)
+            key=NET.convertArray(int8(key),"System.Byte");   %SESSION_KEY
+            ivByte=NET.convertArray(int8(ivByte),"System.Byte"); %加密密码？
+            value=NET.convertArray(value,"System.Byte");       %要加密的值
+            stream = System.IO.MemoryStream;
+            TDS=System.Security.Cryptography.TripleDESCryptoServiceProvider;
+            stream2=System.Security.Cryptography.CryptoStream(stream,TDS.CreateEncryptor(key, ivByte),System.Security.Cryptography.CryptoStreamMode.Write);
+            stream2.Write(value, 0, value.Length);
+            stream2.FlushFinalBlock();
+            sourceArray=stream.ToArray().int16;
+            stream.Close();
+            stream2.Close();            
+        end
+        
+        function str=GlobalLfvTransfer_lfvToKv(obj,arrLfvMsg,iStartIndex,iEndIndex)
+            iOffset=iStartIndex;
+            str=[];
+            while iOffset<iEndIndex
+                num2=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
+                iOffset=iOffset+2;
+                idx=GessTrader.byteToInt(arrLfvMsg,iOffset,2);
+                iOffset=iOffset+2;
+                str2=native2unicode(arrLfvMsg(iOffset:iOffset+num2-2)');
+                iOffset=iOffset+num2-2;
+                str=[str,'#',obj.FieldName{idx},'=',str2];
+            end
+            
+        end
+        
         function sMsg=getsMsg(obj)
             % 组合登陆字符串
             sMsgHead='        180061032 1021805322                                    ';
@@ -228,8 +438,10 @@ classdef GessTrader< handle
                 value=scell{i+1};
                 eval(['obj.CustomInfo.',name,'=','value;']);
             end
-        end
+        end        
+        
     end
+    
     methods(Static)
         function str=fill(v_sSrc,v_cFill,v_iLen,v_cDire)
             if length(v_sSrc)>=v_iLen
@@ -274,8 +486,8 @@ classdef GessTrader< handle
         
         function ip=getLocalIP()
             [~,result]=dos('ipconfig');
-            [~,token]=regexp(result,'IPv4 地址 . . . . . . . . . . . . : (\d+.\d.+.\d+.\d+).*?子网掩码' ,'match', 'tokens');
-            ip=token{:}{:};
+            [~,token]=regexp(result,['IPv4 地址 . . . . . . . . . . . . : (.*?)',newline] ,'match', 'tokens');
+            ip=token{1}{:};
         end
     end
     
