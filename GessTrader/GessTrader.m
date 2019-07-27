@@ -9,16 +9,19 @@ classdef GessTrader< handle
             oper_flag
             user_id
             user_id_type
-            user_pwd
             user_type
             sSSLServerHost
             iSSLServerPort
             timeout
             ServerInfo
             CustomInfo
-            QuoteInfo
+            Quote
             FieldName
     end
+    properties(Access=private)
+          user_pwd 
+    end
+    
     
     methods
         function obj = GessTrader(user_id,user_pwd)
@@ -34,6 +37,8 @@ classdef GessTrader< handle
             obj.sSSLServerHost='119.145.36.50';
             obj.iSSLServerPort=20443;
             obj.timeout=5;
+            obj.FieldName=containers.Map('KeyType','double','ValueType','any');
+            obj.Quote=struct;
             obj.setFieldName
         end
         
@@ -77,8 +82,8 @@ classdef GessTrader< handle
                 streamArr=[streamArr,buffer7.int16];
             end
             str=native2unicode(streamArr);
-            SInfo=GessTrader.splitServerInfo(str);
-            obj.ServerInfo=SInfo;
+            obj.splitServerInfo(str);
+
             if isfield(obj.ServerInfo,'rsp_msg') && strcmp(obj.ServerInfo.rsp_msg,'处理成功')
                  islogin=1;
             else
@@ -86,110 +91,6 @@ classdef GessTrader< handle
                  disp(str);
             end
 
-        end
-
-        function getCustomInfo2(obj)
-            % TransForNormal
-            % 建立发送消息的字符串
-            v_reqMsg.acct_no='1021805322';
-            v_reqMsg.is_check_stat='1';
-            v_reqMsg.oper_flag='1';
-            v_reqMsg.qry_cust_info='1';
-            v_reqMsg.qry_defer='1'; 
-            v_reqMsg.qry_forward='1';
-            v_reqMsg.qry_fund='1';
-            v_reqMsg.qry_storage='1';
-            v_reqMsg.qry_surplus='1';
-
-            v_reqMsg_str=['#acct_no=',v_reqMsg.acct_no,...
-                          '#is_check_stat=',v_reqMsg.is_check_stat,...
-                          '#oper_flag=',v_reqMsg.oper_flag,...
-                          '#qry_cust_info=',v_reqMsg.qry_cust_info,...
-                          '#qry_defer=',v_reqMsg.qry_defer,...
-                          '#qry_forward=',v_reqMsg.qry_forward,...
-                          '#qry_fund=',v_reqMsg.qry_fund,...
-                          '#qry_storage=',v_reqMsg.qry_storage,...
-                          '#qry_surplus=',v_reqMsg.qry_surplus,'#'];
-
-
-            GReqHead.area_code='';
-            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
-            GReqHead.c_teller_id1='';
-            GReqHead.c_teller_id2='';	
-            GReqHead.exch_code='1020';	% 消息类型
-            GReqHead.msg_flag='1';	
-            GReqHead.msg_len='';	
-            GReqHead.msg_type='1';	
-            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
-            GReqHead.term_type='03';	
-            GReqHead.user_id=obj.user_id;	
-            GReqHead.user_type='2';	
-            %---------------------
-            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
-                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
-                          ];
-            % 合并消息字符串
-            str=[GReqHead_Str,v_reqMsg_str];
-            %SendGoldMsg
-            v_sMsg=[GessTrader.fill(num2str(length(str)),'0',8,'L'),str];
-            bSrcMsgBuff=int8(v_sMsg);
-            %TripleDes.encryptMsg
-            iEncryptMode=2;
-            SESSION_KEY='240262447423713749922240'; % 为什么用这个？
-            %encrypt
-            %-------------------加密（C#）
-            key=NET.convertArray(int8(SESSION_KEY),"System.Byte");   %SESSION_KEY
-            ivByte=NET.convertArray(int8('12345678'),"System.Byte"); %加密密码？
-            value=NET.convertArray(bSrcMsgBuff,"System.Byte");       %要加密的值
-            stream = System.IO.MemoryStream;
-            TDS=System.Security.Cryptography.TripleDESCryptoServiceProvider;
-            stream2=System.Security.Cryptography.CryptoStream(stream,TDS.CreateEncryptor(key, ivByte),System.Security.Cryptography.CryptoStreamMode.Write);
-            stream2.Write(value, 0, value.Length);
-            stream2.FlushFinalBlock();
-            sourceArray=stream.ToArray().int16;
-            stream.Close();
-            stream2.Close();
-            %-------------------
-            %encryptMsg;
-            %destinationArray=NET.createArray("System.Byte",8+1+10+length(sourceArray));
-            destinationArray_len=8+1+10+length(sourceArray); % 8位数据长度，1位iEncryptMode=2，10位SESSION_KEY长度，其余是数据本提sourceArray的长度
-            destinationArray=[int16(GessTrader.fill(num2str(destinationArray_len-8),'0',8,'L')),...
-                              int16(2),...
-                              int16(GessTrader.fill(obj.ServerInfo.session_id,' ',10,'R')),...
-                              sourceArray];
-                          
-            %SendGoldMsg
-            buffer=destinationArray;   
-             % 建立Socket连接,发送和接受数据
-            socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
-            set(socket,'InputBufferSize',4500);
-            set(socket,'Timeout',3);
-            fopen(socket);
-            fwrite(socket,buffer);     % 发送请求数据
-            revLen_str=fread(socket,8);% 接受数据位数
-            revLen=str2double(char(revLen_str)');
-            vReadBytes=int16(fread(socket,revLen)); % 接受数据本体
-            fclose(socket);
-            % 是否需要解压缩
-            if length(vReadBytes)>1 && vReadBytes(1)==1
-                bytes=vReadBytes(2:end);
-                buffer2=gzipdecode(uint8(bytes));
-                arrLfvMsg=buffer2(9:end);
-            else
-                arrLfvMsg=int16(vReadBytes);
-            end
-            % 转化为字符串
-            str=native2unicode(arrLfvMsg);
-            obj.splitCunstomInfo(str);
         end
         
         function getCustomInfo(obj)
@@ -286,7 +187,8 @@ classdef GessTrader< handle
             
             obj.SendGoldMsg(socket,str);
             for i=1:44
-                str=obj.RecvGoldMsg(socket)
+                str=obj.RecvGoldMsg(socket);
+                obj.splitQuoteInfo(str);
             end
              fclose(socket);
         end
@@ -397,7 +299,7 @@ classdef GessTrader< handle
                 iOffset=iOffset+2;
                 str2=native2unicode(arrLfvMsg(iOffset:iOffset+num2-2)');
                 iOffset=iOffset+num2-2;
-                str=[str,'#',obj.FieldName{idx},'=',str2];
+                str=[str,'#',obj.FieldName(idx),'=:',str2];
             end
             
         end
@@ -412,23 +314,41 @@ classdef GessTrader< handle
         end
         
         function setFieldName(obj)
-             obj.FieldName{31}='ApiName';
-             obj.FieldName{49}='RspCode';
-             obj.FieldName{54}='Ts_NodeID';
-             obj.FieldName{650}='instID';
-             obj.FieldName{1170}='state';
-             obj.FieldName{785}='marketID';
-             obj.FieldName{786}='marketState';
-             obj.FieldName{48}='RootID';
-             obj.FieldName{50}='RspMsg';
-             obj.FieldName{483}='effectDate';
-             obj.FieldName{549}='feeRate';
-             obj.FieldName{1086}='sys_date  ';
-             obj.FieldName{504}='exch_date';
-             obj.FieldName{773}='m_sys_stat';
-             obj.FieldName{253}='b_sys_stat';
-             obj.FieldName{951}='quoteDate';
-             obj.FieldName{1006}='sZipBuff';
+             obj.FieldName(31)='ApiName';
+             obj.FieldName(49)='RspCode';
+             obj.FieldName(54)='Ts_NodeID';
+             obj.FieldName(650)='instID';
+             obj.FieldName(1170)='state';
+             obj.FieldName(785)='marketID';
+             obj.FieldName(786)='marketState';
+             obj.FieldName(48)='RootID';
+             obj.FieldName(50)='RspMsg';
+             obj.FieldName(483)='effectDate';
+             obj.FieldName(549)='feeRate';
+             obj.FieldName(1086)='sys_date  ';
+             obj.FieldName(504)='exch_date';
+             obj.FieldName(773)='m_sys_stat';
+             obj.FieldName(253)='b_sys_stat';
+             obj.FieldName(951)='quoteDate';
+             obj.FieldName(1006)='sZipBuff';
+        end
+        
+        function splitServerInfo(obj,str)
+            scell0=strsplit(str,{'#','='});
+            scell=scell0(2:end-1);
+            for i=1:2:length(scell)
+                name=scell{i};
+                value=scell{i+1};
+                if strcmp(name,'htm_server_list')
+                    htm_server_list_cell=split(value,{'ˇ','｜','∧'});
+                    htm_server_list_cell=htm_server_list_cell([1:14,16:end-3]);
+                    for j=1:length(htm_server_list_cell)/2
+                        eval(['v.',htm_server_list_cell{j},'=''',htm_server_list_cell{j+14},''';']);
+                    end
+                    value=v;
+                end
+                eval(['obj.ServerInfo.',name,'=','value;']);
+            end
         end
         
         function  splitCunstomInfo(obj,str)
@@ -439,31 +359,43 @@ classdef GessTrader< handle
                 value=scell{i+1};
                 eval(['obj.CustomInfo.',name,'=','value;']);
             end
-        end       
-        
-        function splitQuoteInfo(obj,str)
-             instID='';
-             strcell=split(str,{'#','='});
-             strcell=strcell(2:end-1);
-             for i=1:2:length(strcell)
-                 name=strcell{i};
-                 value=strcell{i+1};
-                 if strcmp(name,'instID')
-                     instID=value;
-                 end
-                 if strcmp(name,'sZipBuff')
-                     name='quote';
-                     value=obj.unzipQuote(value);
-                 end
-                 eval(['result.',name,'=',value,';']);
-                 if ~isempty(instID)
-                     
-                 end
-             end
-             
         end
         
-        function unzipQuote(obj,sZipBuff)
+        function splitQuoteInfo(obj,str)
+            if contains(str,'sZipBuff')==0
+                return;
+            end
+            namecell={};
+            valuecell={};
+             instID='';
+             strcell=split(str,{'#','=:'});
+             strcell=strcell(2:end-1);
+             for i=1:2:length(strcell)
+                 name=deblank(strcell{i});
+                 value=deblank(strcell{i+1});
+                 if strcmp(name,'instID')
+                     instID=lower(replace(value,{'+','(',')','.'},''));
+                 end
+                 if strcmp(name,'sZipBuff')
+                    [name,value]=GessTrader.unzipQuote(value);
+                 end
+                 namecell=[namecell,name];
+                 valuecell=[valuecell,value];
+
+             end
+             if ~isempty(instID)
+                 Quote=cell2struct(valuecell',namecell,1);
+                 eval(['obj.Quote.',instID,'=','Quote;']);
+             end
+        end
+                
+    end
+    
+    methods(Static)
+        
+        function [namecell,valuecell]=unzipQuote(sZipBuff)
+            namecell={};
+            valuecell={};
             mNeedZipFields={'lastSettle', 'lastClose', 'open', 'high', 'low', 'last', 'close', 'settle', 'bid1', 'bidLot1', 'bid2', 'bidLot2', 'bid3', 'bidLot3', 'bid4', 'bidLot4',...
             'bid5', 'bidLot5', 'ask1', 'askLot1', 'ask2', 'askLot2', 'ask3', 'askLot3', 'ask4', 'askLot4', 'ask5', 'askLot5', 'volume', 'weight', 'highLimit', 'lowLimit',...
             'Posi', 'upDown', 'turnOver', 'average', 'sequenceNo', 'quoteTime', 'upDownRate'};
@@ -486,7 +418,8 @@ classdef GessTrader< handle
                     bytes=double([buffer(i+1:i+num4)]);
 
                     i=i+num4+1;
-                    name=mNeedZipFields{index+1}
+                    name=mNeedZipFields{index+1};
+                    namecell=[namecell,name];
                     %toLongByBytes
                     value=0;
                     L=length(bytes);
@@ -504,15 +437,12 @@ classdef GessTrader< handle
                     if strcmp(name,'upDownRate')
                         value=value/10000;
                     end
-                    value
+                    valuecell=[valuecell,value];
                 end
 
             end
         end
-        
-    end
-    
-    methods(Static)
+
         function str=fill(v_sSrc,v_cFill,v_iLen,v_cDire)
             if length(v_sSrc)>=v_iLen
                 str=v_sSrc;
@@ -527,24 +457,6 @@ classdef GessTrader< handle
                 error('fill函数的v_cDire参数输入错误，应该为R或L');
             end
             
-        end
-        
-        function ServerInfo=splitServerInfo(str)
-            scell0=strsplit(str,{'#','='});
-            scell=scell0(2:end-1);
-            for i=1:2:length(scell)
-                name=scell{i};
-                value=scell{i+1};
-                if strcmp(name,'htm_server_list')
-                    htm_server_list_cell=split(value,{'ˇ','｜','∧'});
-                    htm_server_list_cell=htm_server_list_cell([1:14,16:end-3]);
-                    for j=1:length(htm_server_list_cell)/2
-                        eval(['v.',htm_server_list_cell{j},'=''',htm_server_list_cell{j+14},''';']);
-                    end
-                    value=v;
-                end
-                eval(['ServerInfo.',name,'=','value;']);
-            end
         end
         
         function num=byteToInt(arrLfvMsg,iOffset,iLen)
