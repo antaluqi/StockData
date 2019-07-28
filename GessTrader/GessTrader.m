@@ -192,6 +192,70 @@ classdef GessTrader< handle
             end
              fclose(socket);
         end
+        
+        function str=trade(obj)
+            v_reqMsg.acct_no=obj.user_id;
+            v_reqMsg.b_market_id='';
+            v_reqMsg.b_market_id='02';
+            v_reqMsg.bank_no='';
+            %b_market_id (ylink.trans.msg.req.ReqP4001)	""	string
+            v_reqMsg.bs='b';
+            v_reqMsg.client_serial_no=[obj.user_id,num2str(floor(System.DateTime.Now.TimeOfDay.TotalSeconds)*10)];               %'1021805322584010';
+            v_reqMsg.cov_type=''	;
+            v_reqMsg.cust_id=obj.user_id;
+            %deli_flag (ylink.trans.msg.req.ReqP4001)	""	string
+            v_reqMsg.deli_flag='';
+            v_reqMsg.entr_amount=1;
+            v_reqMsg.entr_price='3904.00';
+            v_reqMsg.match_type='1';
+            %offset_flag (ylink.trans.msg.req.ReqP4001)	""	string
+            v_reqMsg.offset_flag='0';
+            v_reqMsg.oper_flag=1;
+            v_reqMsg.order_send_type='1';
+            v_reqMsg.prod_code='Ag(T+D)';
+            v_reqMsg.src_match_no='';
+            v_reqMsg_str=GessTrader.struct2str(v_reqMsg);            
+            
+            
+            
+            GReqHead.area_code='';
+            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
+            GReqHead.c_teller_id1='';
+            GReqHead.c_teller_id2='';	
+            GReqHead.exch_code='4041';	% 消息类型
+            GReqHead.msg_flag='1';	
+            GReqHead.msg_len='';	
+            GReqHead.msg_type='1';	
+            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
+            GReqHead.term_type='03';	
+            GReqHead.user_id=obj.user_id;	
+            GReqHead.user_type='2';	
+            %---------------------
+            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
+                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
+                          ];          
+                      
+             % 合并消息字符串
+            str=[GReqHead_Str,v_reqMsg_str];
+           % 建立Socket连接,发送和接受数据
+            socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
+            set(socket,'InputBufferSize',4500);
+            set(socket,'Timeout',3);
+            fopen(socket);
+            obj.SendGoldMsg(socket,str);
+            str=obj.RecvGoldMsg(socket);
+            fclose(socket);         
+             
+        end
     end
     
     methods(Access=private)
@@ -260,8 +324,21 @@ classdef GessTrader< handle
         end
         
         function buffer=TripleDes_decryptMsg(obj,bDecryptMsgBuff)
-            %
-            %sth more
+            ENCRYPT_MODEL_LEN=1;
+            SESSION_LEN=10;
+            IV_DEFAULT='12345678';
+            num=bDecryptMsgBuff(ENCRYPT_MODEL_LEN);
+            switch num
+                case 1
+
+                case 2
+                    str='240262447423713749922240';
+                    vStartIndex=ENCRYPT_MODEL_LEN+SESSION_LEN+1;
+                    buffer=bDecryptMsgBuff(vStartIndex:end);
+                    vSrcBuff=obj.decrypt(str,IV_DEFAULT,buffer);
+                    buffer=vSrcBuff(9:end);
+                    return;
+            end
             buffer=bDecryptMsgBuff;
         end
         
@@ -287,6 +364,21 @@ classdef GessTrader< handle
             sourceArray=stream.ToArray().int16;
             stream.Close();
             stream2.Close();            
+        end
+        
+        function vSrcBuff=decrypt(obj,key,ivByte,value)
+            key=NET.convertArray(int8(key),"System.Byte");   %SESSION_KEY
+            ivByte=NET.convertArray(int8(ivByte),"System.Byte"); %加密密码？
+            value=NET.convertArray(value,"System.Byte");       %要加密的值   
+            stream = System.IO.MemoryStream(value);
+            TDS=System.Security.Cryptography.TripleDESCryptoServiceProvider;
+            stream2=System.Security.Cryptography.CryptoStream(stream,TDS.CreateDecryptor(key, ivByte),System.Security.Cryptography.CryptoStreamMode.Read);
+            buffer=NET.createArray('System.Byte', value.Length);
+            stream2.Read(buffer, 0, buffer.Length);
+            vSrcBuff=buffer.int16;
+            stream.Close();
+            stream2.Close();            
+
         end
         
         function str=GlobalLfvTransfer_lfvToKv(obj,arrLfvMsg,iStartIndex,iEndIndex)
@@ -470,6 +562,19 @@ classdef GessTrader< handle
             [~,result]=dos('ipconfig');
             [~,token]=regexp(result,['IPv4 地址 . . . . . . . . . . . . : (.*?)',newline] ,'match', 'tokens');
             ip=token{1}{:};
+        end
+        
+        function str=struct2str(struc)
+            str='#';
+            fn=fieldnames(struc);
+            for i=1:length(fn)
+                name=fn{i};
+                value=getfield(struc,name);
+                if ~isempty(value)
+                  str=[str,name,'=',num2str(value),'#'] ;
+                end
+            end
+            
         end
     end
     

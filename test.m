@@ -524,13 +524,57 @@ if ~isempty(sZipBuff)
 end
 
 
+%% =================================================================
+% 报单
 
 
+		v_reqMsg.acct_no='1021805322';
+		v_reqMsg.b_market_id='';
+		v_reqMsg.b_market_id='02';
+		v_reqMsg.bank_no='';
+		%b_market_id (ylink.trans.msg.req.ReqP4001)	""	string
+		v_reqMsg.bs='b';
+		v_reqMsg.client_serial_no='1021805322487090';
+		v_reqMsg.cov_type=''	;
+		v_reqMsg.cust_id='1021805322';
+		%deli_flag (ylink.trans.msg.req.ReqP4001)	""	string
+		v_reqMsg.deli_flag='';
+		v_reqMsg.entr_amount=1;
+		v_reqMsg.entr_price='3904.00';
+		v_reqMsg.match_type='1';
+		%offset_flag (ylink.trans.msg.req.ReqP4001)	""	string
+		v_reqMsg.offset_flag='0';
+		v_reqMsg.oper_flag=1;
+		v_reqMsg.order_send_type='1';
+		v_reqMsg.prod_code='Ag(T+D)';
+		v_reqMsg.src_match_no='';
+        GessTrader.struct2str(v_reqMsg)
 
+            GReqHead.area_code='';
+            GReqHead.branch_id='B00151853';%"B00151853";
+            GReqHead.c_teller_id1='';
+            GReqHead.c_teller_id2='';	
+            GReqHead.exch_code='4041';	% 消息类型
+            GReqHead.msg_flag='1';	
+            GReqHead.msg_len='';	
+            GReqHead.msg_type='1';	
+            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
+            GReqHead.term_type='03';	
+            GReqHead.user_id='1021805322';	
+            GReqHead.user_type='2';	
+            %---------------------
+            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
+                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
+                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
+                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
+                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
+                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
+                          ];
 
-
-
-
-
-
+%'7f589280140411032 1021805322    B00151853                       #b_market_id=02#bs=b#offset_flag=0#acct_no=1021805322#client_serial_no=1021805322487090#cust_id=1021805322#entr_amount=1#entr_price=3904.00#match_type=1#oper_flag=1#order_send_type=1#prod_code=Ag(T+D)#'
 
