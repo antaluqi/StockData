@@ -18,6 +18,7 @@ classdef GessTrader< handle
             Quote
             FieldName
     end
+    
     properties(Access=private)
           user_pwd 
     end
@@ -25,6 +26,9 @@ classdef GessTrader< handle
     
     methods
         function obj = GessTrader(user_id,user_pwd)
+            addpath('.\Trans\')
+            addpath('.\Comm\')
+            
             obj.bank_no='0015';
             obj.login_ip= GessTrader.getLocalIP();
             obj.net_agent='1';
@@ -42,10 +46,28 @@ classdef GessTrader< handle
             obj.setFieldName
         end
         
-        function islogin = login(obj)
-            % 连接登陆服务器
-            sMsg=obj.getsMsg;
-            vSrcBuff=uint8(double(sMsg)); % 数据二进制化
+        function islogin=login(obj)
+            % 数据头
+            GReqHead=ReqHead;
+            GReqHead.exch_code='8006';
+            GReqHead.msg_type='1';
+            GReqHead.msg_flag='1';
+            GReqHead.term_type='03';
+            GReqHead.user_type='2';
+            GReqHead.user_id=obj.user_id;     
+            % 数据体
+            v_reqMsg=ReqT8006;
+            v_reqMsg.bank_no=obj.bank_no;
+            v_reqMsg.login_ip=GessTrader.getLocalIP();
+            v_reqMsg.net_agent='1';
+            v_reqMsg.net_envionment='2';
+            v_reqMsg.oper_flag='1';
+            v_reqMsg.user_id=obj.user_id;
+            v_reqMsg.user_id_type='1';
+            v_reqMsg.user_pwd=obj.user_pwd;
+            v_reqMsg.user_type='2';
+            v_sMsg=[GReqHead.ToString(),v_reqMsg.ToString()];
+            vSrcBuff=uint8(double(v_sMsg)); % 数据二进制化
             % RSA加密解密的各个对象建立（C#）,各编程语言会有区别
             provider=System.Security.Cryptography.RSACryptoServiceProvider();
             provider2=System.Security.Cryptography.RSACryptoServiceProvider();
@@ -90,12 +112,20 @@ classdef GessTrader< handle
                  islogin=0;
                  disp(str);
             end
-
+            
         end
         
         function getCustomInfo(obj)
-            % TransForNormal
-            % 建立发送消息的字符串
+            % 数据头
+            GReqHead=ReqHead;
+            GReqHead.exch_code='1020';
+            GReqHead.msg_type='1';
+            GReqHead.msg_flag='1';
+            GReqHead.term_type='03';
+            GReqHead.user_type='2';
+            GReqHead.user_id=obj.user_id;     
+            % 数据体
+            v_reqMsg=ReqT1020;
             v_reqMsg.acct_no=obj.user_id;
             v_reqMsg.is_check_stat='1';
             v_reqMsg.oper_flag='1';
@@ -104,88 +134,44 @@ classdef GessTrader< handle
             v_reqMsg.qry_forward='1';
             v_reqMsg.qry_fund='1';
             v_reqMsg.qry_storage='1';
-            v_reqMsg.qry_surplus='1';
-
-            v_reqMsg_str=['#acct_no=',v_reqMsg.acct_no,...
-                          '#is_check_stat=',v_reqMsg.is_check_stat,...
-                          '#oper_flag=',v_reqMsg.oper_flag,...
-                          '#qry_cust_info=',v_reqMsg.qry_cust_info,...
-                          '#qry_defer=',v_reqMsg.qry_defer,...
-                          '#qry_forward=',v_reqMsg.qry_forward,...
-                          '#qry_fund=',v_reqMsg.qry_fund,...
-                          '#qry_storage=',v_reqMsg.qry_storage,...
-                          '#qry_surplus=',v_reqMsg.qry_surplus,'#'];
-
-
-            GReqHead.area_code='';
-            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
-            GReqHead.c_teller_id1='';
-            GReqHead.c_teller_id2='';	
-            GReqHead.exch_code='1020';	% 消息类型
-            GReqHead.msg_flag='1';	
-            GReqHead.msg_len='';	
-            GReqHead.msg_type='1';	
-            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
-            GReqHead.term_type='03';	
-            GReqHead.user_id=obj.user_id;	
-            GReqHead.user_type='2';	
-            %---------------------
-            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
-                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
-                          ];
-            % 合并消息字符串
-            str=[GReqHead_Str,v_reqMsg_str];
-           % 建立Socket连接,发送和接受数据
+            v_reqMsg.qry_surplus='1';  
+            v_sMsg=[GReqHead.ToString(),v_reqMsg.ToString()];
+            % 建立Socket连接,发送和接受数据
             socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
             set(socket,'InputBufferSize',4500);
             set(socket,'Timeout',3);
             fopen(socket);
-            obj.SendGoldMsg(socket,str);
+            obj.SendGoldMsg(socket,v_sMsg);
             str=obj.RecvGoldMsg(socket);
             fclose(socket);
             obj.splitCunstomInfo(str);
+            
         end
         
         function getQuote(obj)
-            GBcMsgReqLink.RspCode='';	
-            GBcMsgReqLink.RspMsg='';
-            GBcMsgReqLink.again_flag='0';
-            GBcMsgReqLink.branch_id=obj.ServerInfo.branch_id;
-            GBcMsgReqLink.cust_type_id='C01';
-            GBcMsgReqLink.is_lfv='1';
-            GBcMsgReqLink.lan_ip=obj.login_ip;
-            GBcMsgReqLink.term_type='';
-            GBcMsgReqLink.user_id=obj.user_id;
-            GBcMsgReqLink.user_key=datestr(now,'HHMMSSFFF');
-            GBcMsgReqLink.user_pwd=obj.user_pwd;
-            GBcMsgReqLink.user_type=obj.user_type;
-            GBcMsgReqLink.www_ip='';
-
-            str=['#again_flag=',GBcMsgReqLink.again_flag,...
-                '#branch_id=',GBcMsgReqLink.branch_id,...
-                '#cust_type_id=',GBcMsgReqLink.cust_type_id,'∧'...
-                '#is_lfv=',GBcMsgReqLink.is_lfv,...
-                '#lan_ip=',GBcMsgReqLink.lan_ip,...
-                '#user_id=',GBcMsgReqLink.user_id,...
-                '#user_key=',GBcMsgReqLink.user_key,...
-                '#user_pwd=',GBcMsgReqLink.user_pwd,...
-                '#user_type=',GBcMsgReqLink.user_type,'#'];
-             % 建立Socket连接,发送和接受数据
+            v_reqMsg=GBcMsgReqLink;
+            v_reqMsg.RspCode='';	
+            v_reqMsg.RspMsg='';
+            v_reqMsg.again_flag='0';
+            v_reqMsg.branch_id=obj.ServerInfo.branch_id;
+            v_reqMsg.cust_type_id='C01';
+            v_reqMsg.is_lfv='1';
+            v_reqMsg.lan_ip=obj.login_ip;
+            v_reqMsg.term_type='';
+            v_reqMsg.user_id=obj.user_id;
+            v_reqMsg.user_key=datestr(now,'HHMMSSFFF');
+            v_reqMsg.user_pwd=obj.user_pwd;
+            v_reqMsg.user_type=obj.user_type;
+            v_reqMsg.www_ip='';
+            
+            v_sMsg=v_reqMsg.ToString;
+            % 建立Socket连接,发送和接受数据
             socket = tcpip(obj.ServerInfo.htm_server_list.broadcast_ip, str2double(obj.ServerInfo.htm_server_list.broadcast_port),'NetworkRole','Client');
             set(socket,'InputBufferSize',4500);
             set(socket,'Timeout',3);
             fopen(socket);
             
-            obj.SendGoldMsg(socket,str);
+            obj.SendGoldMsg(socket,v_sMsg);
             for i=1:44
                 str=obj.RecvGoldMsg(socket);
                 obj.splitQuoteInfo(str);
@@ -194,69 +180,37 @@ classdef GessTrader< handle
         end
         
         function str=trade(obj)
+            % 数据头
+            GReqHead=ReqHead;
+            GReqHead.exch_code='4041';
+            GReqHead.msg_type='1';
+            GReqHead.msg_flag='1';
+            GReqHead.term_type='03';
+            GReqHead.user_type='2';
+            GReqHead.user_id=obj.user_id;     
+            % 数据体
+            v_reqMsg=ReqT4041;            
             v_reqMsg.acct_no=obj.user_id;
-            v_reqMsg.b_market_id='';
-            v_reqMsg.b_market_id='02';
-            v_reqMsg.bank_no='';
-            %b_market_id (ylink.trans.msg.req.ReqP4001)	""	string
-            v_reqMsg.bs='b';
             v_reqMsg.client_serial_no=[obj.user_id,num2str(floor(System.DateTime.Now.TimeOfDay.TotalSeconds)*10)];               %'1021805322584010';
-            v_reqMsg.cov_type=''	;
             v_reqMsg.cust_id=obj.user_id;
-            %deli_flag (ylink.trans.msg.req.ReqP4001)	""	string
-            v_reqMsg.deli_flag='';
-            v_reqMsg.entr_amount=1;
-            v_reqMsg.entr_price='3904.00';
-            v_reqMsg.match_type='1';
-            %offset_flag (ylink.trans.msg.req.ReqP4001)	""	string
-            v_reqMsg.offset_flag='0';
-            v_reqMsg.oper_flag=1;
-            v_reqMsg.order_send_type='1';
-            v_reqMsg.prod_code='Ag(T+D)';
-            v_reqMsg.src_match_no='';
-            v_reqMsg_str=GessTrader.struct2str(v_reqMsg);            
-            
-            
-            
-            GReqHead.area_code='';
-            GReqHead.branch_id=obj.ServerInfo.branch_id;%"B00151853";
-            GReqHead.c_teller_id1='';
-            GReqHead.c_teller_id2='';	
-            GReqHead.exch_code='4041';	% 消息类型
-            GReqHead.msg_flag='1';	
-            GReqHead.msg_len='';	
-            GReqHead.msg_type='1';	
-            GReqHead.seq_no=lower(dec2hex(int32(str2double(datestr(now,'HHMMSSFFF')))));
-            GReqHead.term_type='03';	
-            GReqHead.user_id=obj.user_id;	
-            GReqHead.user_type='2';	
-            %---------------------
-            GReqHead_Str=[GessTrader.fill(GReqHead.seq_no,' ',8,'R'),...
-                          GessTrader.fill(GReqHead.msg_type,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.exch_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.msg_flag,' ',1,'R'),...
-                          GessTrader.fill(GReqHead.term_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_type,' ',2,'R'),...
-                          GessTrader.fill(GReqHead.user_id,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.area_code,' ',4,'R'),...
-                          GessTrader.fill(GReqHead.branch_id,' ',12,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id1,' ',10,'R'),...
-                          GessTrader.fill(GReqHead.c_teller_id2,' ',10,'R'),...
-                          ];          
-                      
-             % 合并消息字符串
-            str=[GReqHead_Str,v_reqMsg_str];
+            v_reqMsg.entr_amount = 1;      % 交易数量
+            v_reqMsg.entr_price = 4025; % 交易价格
+            v_reqMsg.prod_code = 'Ag(T+D)'; % 交易品种      
+            % 合并消息字符串
+            v_sMsg=[GReqHead.ToString,v_reqMsg.ToString];
            % 建立Socket连接,发送和接受数据
             socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
             set(socket,'InputBufferSize',4500);
             set(socket,'Timeout',3);
             fopen(socket);
-            obj.SendGoldMsg(socket,str);
+            obj.SendGoldMsg(socket,v_sMsg);
             str=obj.RecvGoldMsg(socket);
-            fclose(socket);         
-             
+            fclose(socket);           
         end
     end
+    
+    
+
     
     methods(Access=private)
         
@@ -396,14 +350,7 @@ classdef GessTrader< handle
             
         end
         
-        function sMsg=getsMsg(obj)
-            % 组合登陆字符串
-            sMsgHead='        180061032 1021805322                                    ';
-            sMsg=[sMsgHead,'#bank_no=',obj.bank_no,'#login_ip=',obj.login_ip,'#net_agent=',obj.net_agent,'#net_envionment=',obj.net_envionment,'#oper_flag=',obj.oper_flag,'#user_id=',obj.user_id,'#user_id_type=',obj.user_id_type,'#user_pwd=',obj.user_pwd,'#user_type=',obj.user_type,'#'];
-            sMsgNow=[lower(dec2hex(int32(str2num(datestr(now,'HHMMSSFFF'))))),'1'];
-            sMsg(1:length(sMsgNow))=sMsgNow;
-            
-        end
+        
         
         function setFieldName(obj)
              obj.FieldName(31)='ApiName';
