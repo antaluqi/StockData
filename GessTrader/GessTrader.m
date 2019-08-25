@@ -207,6 +207,38 @@ classdef GessTrader< handle
             str=obj.RecvGoldMsg(socket);
             fclose(socket);           
         end
+        
+        function delete(obj)
+            % 数据头
+            GReqHead=ReqHead;
+            GReqHead.branch_id = obj.ServerInfo.branch_id;
+            GReqHead.exch_code='8002';
+            GReqHead.msg_type='1';
+            GReqHead.msg_flag='1';
+            GReqHead.term_type='03';
+            GReqHead.user_type='2';
+            GReqHead.user_id=obj.user_id;     
+            % 数据体
+            v_reqMsg=ReqT8002;   
+            v_reqMsg.oper_flag='1';
+            v_reqMsg.user_id=obj.user_id;
+            v_reqMsg.user_type='2';
+            % 合并消息字符串
+            v_sMsg=[GReqHead.ToString,v_reqMsg.ToString];
+           % 建立Socket连接,发送和接受数据
+            socket = tcpip(obj.ServerInfo.htm_server_list.trans_ip, str2double(obj.ServerInfo.htm_server_list.trans_port),'NetworkRole','Client');
+            set(socket,'InputBufferSize',4500);
+            set(socket,'Timeout',3);
+            fopen(socket);
+            obj.SendGoldMsg(socket,v_sMsg);
+            str=obj.RecvGoldMsg(socket);
+            fclose(socket);              
+            if isempty(find(str,'处理成功'))
+               disp([obj.user_id,'退出失败'])
+            else
+               disp([obj.user_id,'退出成功'])
+            end
+        end
     end
     
     
