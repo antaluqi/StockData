@@ -173,6 +173,6 @@ conn=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgre
 %dbds=databaseDatastore(conn,'select realtime_sl.code,realtime_sl.name,realtime_sl.price,recent.c_down20,recent.c,recent.down20 from realtime_sl,recent where recent.code=realtime_sl.code and (realtime_sl.price-recent.c_down20)/recent.c_down20<-0.02 and recent.c>recent.down20 and realtime_sl.open>recent.c_down20');
 dbds=databaseDatastore(conn,'select * from qfqdk where code=''sh600118'' order by date desc');
 k=dbds.readall
-plot(k.close)
+o
 
 close(conn)

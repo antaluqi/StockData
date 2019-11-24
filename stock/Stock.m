@@ -363,12 +363,12 @@ classdef Stock<handle
              ed=min(datenum(BeginDateF,'yyyy-mm-dd')+800,datenum(EndDateF,'yyyy-mm-dd'));
              celldata=[];
              while 1
-                 url=['http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayqfq&param=',obj.Code,',day,',BeginDateF,',',datestr(ed,'yyyy-mm-dd'),',',num2str(date_len),',qfq&r=',num2str(rand)];
+                  url=['http://web.ifzq.gtimg.cn/appstock/app/fqkline/get?_var=kline_dayfq&param=',obj.Code,',day,',BeginDateF,',',datestr(ed,'yyyy-mm-dd'),',',num2str(date_len),',fq&r=',num2str(rand)];
                  [sourcefile, status] =urlread(sprintf(url),'Charset','GBK');
                  if ~status
                      error('读取错误\n')
                  end
-                 jsonStruct=jsondecode(sourcefile(14:end));
+                 jsonStruct=jsondecode(sourcefile(13:end));
                  fn=eval(['fieldnames(jsonStruct.data.',obj.Code,');']);
                  celldata=[celldata;eval(['jsonStruct.data.',obj.Code,'.',fn{1},';'])];
                  if ed>=datenum(EndDateF,'yyyy-mm-dd')
@@ -389,6 +389,8 @@ classdef Stock<handle
                      Val=[Val;TodayK];
                  end
              end
+             Val=obj.fuquan(Val,'L');
+             
              name={'Date','Open','High','Close','Low','Volume'};
              Val=cell2table([cellstr(datestr(Val(:,1),'yyyy-mm-dd')),num2cell(Val(:,2:end))],'VariableNames',name);
              Val.Date=datetime(Val.Date);
@@ -1160,9 +1162,8 @@ classdef Stock<handle
                 ,'卖四','卖四量（手）','卖五','卖五量（手）','最近逐笔成交','时间','涨跌','涨跌%','最高','最低','价格/成交量（手）/成交额','成交量（手）'...
                 ,'成交额（万）','换手率','市盈率','[blank]','最高','最低','振幅','流通市值','总市值','市净率','涨停价','跌停价','[blank]'};
             Name={'Market','Name','Code','RealPrice','YClosePrice','OpenPrice','Volume','B','S','Buy1Price','Buy1Volume','Buy2Price','Buy2Volume','Buy3Price','Buy3Volume','Buy4Price','Buy4Volume','Buy5Price','Buy5Volume','Sell1Price','Sell1Volume','Sell2Price','Sell2Volume','Sell3Price','Sell3Volume','Sell4Price','Sell4Volume','Sell5Price','Sell5Volume','LastTransaction','LastTime','Rise','Yield','HighPrice','LowPrice','Price_Volume_Amount','Volume2','Amount','HSL','PE','State','High','Low','Amplitude','CirculationMarketValue','TotalMarketValue','PB','HardenPrice','LimitPrice','blank2','blank3','blank4','blank5','blank6','blank7','blank8','blank9','blank10','blank11','blank12','blank13','blank14'};
-
             % 将标题与信息组合
-              info=cell2table(S,'VariableNames',Name');
+              info=cell2table(S(:,1:size(Name,2)),'VariableNames',Name');
             
             %--------------------------------------------------------------
         end% Handicap
