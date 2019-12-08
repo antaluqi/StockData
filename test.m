@@ -169,10 +169,24 @@ top=[m,m>[nan;m(1:end-1)]&m>[m(2:end);nan],-1*(m<[nan;m(1:end-1)]&m<[m(2:end);na
 %% =================================================================================
 clear
 clc
-conn=database('testDB','postgres','123456','org.postgresql.Driver','jdbc:postgresql://localhost:5432/testDB');
-%dbds=databaseDatastore(conn,'select realtime_sl.code,realtime_sl.name,realtime_sl.price,recent.c_down20,recent.c,recent.down20 from realtime_sl,recent where recent.code=realtime_sl.code and (realtime_sl.price-recent.c_down20)/recent.c_down20<-0.02 and recent.c>recent.down20 and realtime_sl.open>recent.c_down20');
-dbds=databaseDatastore(conn,'select * from qfqdk where code=''sh600118'' order by date desc');
-k=dbds.readall
-plot(k.close)
+S=Stock('sh600118');
+d=S.Indicators({'BOLL'},{[20,2]},{'2019-01-01','2019-12-03'});
+d.PBOllDown20_2=[nan;d.BOllDown20_2(1:end-1)];
+d.PLow=[nan;d.Low(1:end-1)];
+plb=d(d.Open>d.BOllDown20_2 & d.Low<d.BOllDown20_2 & d.PLow>d.PBOllDown20_2,:);
 
-close(conn)
+% zs=0.15;
+% zy=0.15;
+% zj=0.05;
+% 
+% 
+% for i=1:height(plb)
+%    dL=d(d.Date>pld.Date(i),:);
+%    for j=1:height(dL)
+%        
+%    end
+% 
+% end
+
+
+
