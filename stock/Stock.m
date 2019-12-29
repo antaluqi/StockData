@@ -1210,7 +1210,7 @@ classdef Stock<handle
                 '资金流入流出总和1+2+5+6','未知','未知','名字','日期','未知','未知','未知','未知','未知','未知','未知'};
              Name={'Code','MInflow','MOutflow','MNetInflow','MNetInflow_Total','RInflow','ROutflow','RNetInflow','RNetInflow_Total','TotalFund','unknow1','unknow2','Name','LastTime','unknow3','unknow4','unknow5','unknow6','unknow7','unknow8','unknow9'};
              if ~isempty(S)
-                 info=cell2table(S,'VariableNames',Name);
+                 info=cell2table(S,'VariableNames',Name(1:size(S,2)));
              else
                  info=[];
              end
