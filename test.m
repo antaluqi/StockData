@@ -188,5 +188,15 @@ plb=d(d.Open>d.BOllDown20_2 & d.Low<d.BOllDown20_2 & d.PLow>d.PBOllDown20_2,:);
 % 
 % end
 
+%% =================================================================
+clc
+code='sz000528';
+S=Stock(code);
+data=S.HistoryDaily('2019-01-01','2020-02-01');
+p3=Plan3(code,data)
+p3.Loop
+
+
+
 
 

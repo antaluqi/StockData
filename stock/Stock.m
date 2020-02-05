@@ -182,7 +182,9 @@ classdef Stock<handle
              Val=[Val(:,1),num2cell(str2double(Val(:,2:3))),Val(:,4)];
              %-----------------------------------------------转换成Table数据
              Name={'Time','Volume','Price','Direction'};
-             Val=cell2table(Val(end:-1:1,:),'VariableNames',Name)
+             Val=cell2table(Val(end:-1:1,:),'VariableNames',Name);
+             Val.Time=duration(Val.Time);
+             Val=table2timetable(Val);
          end % RealTick
          function Val=HistoryTick2(obj,Date) %历史逐笔交易
              %-----------------------------------------读取接口数据
